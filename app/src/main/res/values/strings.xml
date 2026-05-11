@@ -1,0 +1,173 @@
+<resources>
+    <string name="app_name">HerbHopper-v1</string>
+    <!-- Placeholder para Google Sign-In (Reemplazar con el valor real de google-services.json) -->
+    <string name="default_web_client_id">your_web_client_id_here.apps.googleusercontent.com</string>
+
+    <!-- Secure Access Screen -->
+    <string name="secure_access_title">Acceso Seguro</string>
+    <string name="secure_access_subtitle">Ingrese sus credenciales para continuar su camino de bienestar botánico.</string>
+    <string name="continue_with_google">Continuar con Google</string>
+    <string name="other_options">OTRAS OPCIONES</string>
+    <string name="biometrics">Biometría</string>
+    <string name="fingerprint_face">Huella o Reconocimiento Facial</string>
+    <string name="pin_code">Código PIN</string>
+    <string name="pin_subtitle">Acceso numérico de 6 dígitos</string>
+    <string name="access_problems">¿Tiene problemas para acceder?</string>
+    <string name="reset_credentials">Restablecer credenciales</string>
+    <string name="no_account">¿No tienes una cuenta?</string>
+    <string name="sign_up_here">Regístrate aquí</string>
+    <string name="copyright">Herb Hopper Clinical Systems © 2024</string>
+
+    <!-- Login Screen -->
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    <string name="biometric_instruction">Coloque su dedo en el sensor o use su PIN seguro para acceder a sus recetas.</string>
+    <string name="awaiting_auth">ESPERANDO AUTENTICACIÓN</string>
+    <string name="or_entry_pin">O INGRESE EL PIN</string>
+    <string name="forgot_pin">¿Olvidó su PIN de seguridad?</string>
+    <string name="version_info">Veridian Health Systems v4.2.0</string>
+    <string name="clinical_security">Seguridad de Grado Clínico</string>
+
+    <!-- Main Menu -->
+    <string name="main_menu">Menú Principal</string>
+    <string name="main_menu_subtitle">Gestione su salud con precisión clínica y la sabiduría de la naturaleza.</string>
+    <string name="explore_catalog">Explorar Catálogo</string>
+    <string name="explore_catalog_subtitle">Descubra nuestra selección premium de extractos.</string>
+    <string name="my_orders">Mis Pedidos</string>
+    <string name="history">Historial</string>
+    <string name="upload_formula">Cargar Fórmula</string>
+    <string name="validation">Validación</string>
+    <string name="my_profile">Mi Perfil</string>
+    <string name="settings">Configuración</string>
+    <string name="help_center">Centro de Ayuda</string>
+    <string name="support_24_7">Soporte 24/7</string>
+    <string name="logout">Cerrar Sesión</string>
+    <string name="home">Inicio</string>
+    <string name="orders">Pedidos</string>
+    <string name="scripts">Recetas</string>
+    <string name="profile">Perfil</string>
+    <string name="view_products">Ver Productos</string>
+
+    <!-- Catalog -->
+    <string name="search_formulations">Buscar formulaciones...</string>
+    <string name="staff_pick">SELECCIÓN DEL PERSONAL</string>
+    <string name="staff_pick_subtitle">Optimizado para la recuperación nocturna.</string>
+    <string name="add_to_cart">Agregar al Carrito</string>
+    <string name="catalog">Catálogo</string>
+    <string name="catalog_subtitle">Formulaciones botánicas de grado farmacéutico</string>
+    <string name="all">Todos</string>
+    <string name="oil">Aceite</string>
+    <string name="capsules">Cápsulas</string>
+    <string name="creams">Cremas</string>
+    <string name="extracts">Extractos</string>
+
+    <!-- Cart -->
+    <string name="shopping_cart">Carrito de Compras</string>
+    <string name="cart_subtitle">Tu selección de bienestar botánico curada.</string>
+    <string name="summary">Resumen</string>
+    <string name="subtotal">Subtotal</string>
+    <string name="clinical_shipping">Envío clínico</string>
+    <string name="free">Gratis</string>
+    <string name="taxes">Impuestos</string>
+    <string name="total">Total</string>
+    <string name="checkout">Proceder al Pago</string>
+    <string name="continue_shopping">Continuar Comprando</string>
+
+    <!-- Create Account -->
+    <string name="create_account">Crear Cuenta</string>
+    <string name="create_account_subtitle">Comience su viaje hacia el bienestar natural con precisión clínica y cuidado artesanal.</string>
+    <string name="full_name">Nombre Completo</string>
+    <string name="email">Correo electrónico</string>
+    <string name="phone">Teléfono</string>
+    <string name="password">Contraseña</string>
+    <string name="or_continue_with">o continuar con</string>
+    <string name="signup_google">Registrarse con Google</string>
+    <string name="already_have_account">¿Ya tienes una cuenta? Iniciar Sesión</string>
+    <string name="purity_guaranteed">Pureza Garantizada</string>
+    <string name="purity_subtitle">Nuestros protocolos garantizan que cada producto cumpla con los estándares farmacéuticos más estrictos.</string>
+
+    <!-- Prescription Validation -->
+    <string name="prescription_frame_msg">Coloque su receta dentro del marco</string>
+    <string name="prescription_instruction">Asegúrese de que todo el texto sea legible y esté bien iluminado.</string>
+    <string name="gallery">Galería</string>
+    <string name="flash">Flash</string>
+    <string name="prescription_footer_msg">Asegúrese de incluir la firma del médico y el sello oficial de la clínica.</string>
+
+    <!-- Order History -->
+    <string name="order_history_title">Historial de Órdenes</string>
+    <string name="order_history_subtitle">Revisa el estado y detalles de tus preparaciones botánicas.</string>
+    <string name="delivered">ENTREGADO</string>
+    <string name="status_in_progress">EN PROCESO</string>
+    <string name="cancelled">CANCELADO</string>
+    <string name="items_count">%1$d artículos • %2$s</string>
+
+    <!-- Product Details -->
+    <string name="details">Detalles</string>
+    <string name="concentration">Concentración</string>
+    <string name="thc_content">Contenido THC</string>
+    <string name="description">Descripción</string>
+    <string name="relaxation">Relajación</string>
+    <string name="anti_inflammatory">Antiinflamatorio</string>
+    <string name="per_bottle">/ %1$s botella</string>
+    <string name="usage_mode">Modo de Uso</string>
+    <string name="certification">Certificación</string>
+
+    <!-- Order Tracking -->
+    <string name="order_tracking_title">Rastreo de Pedido</string>
+    <string name="order_tracking_subtitle">Sigue el recorrido de tu medicina desde el laboratorio.</string>
+    <string name="on_the_way">EN CAMINO</string>
+    <string name="tracking_msg">Tu pedido está siendo transportado con control térmico.</string>
+    <string name="delivery_person">Repartidor</string>
+    <string name="delivery_name">Carlos Mendoza</string>
+    <string name="vehicle_type">Vehículo Eléctrico</string>
+    <string name="estimated_arrival">Llegada Estimada</string>
+    <string name="eta_time">14:45 PM</string>
+
+    <!-- Seller Dashboard -->
+    <string name="seller_dashboard_title">Dashboard del Vendedor</string>
+    <string name="seller_welcome">Bienvenido, Dr. Arboleda. Resumen clínico de hoy.</string>
+    <string name="daily_sales_summary">RESUMEN DE VENTAS DIARIAS</string>
+    <string name="real_time">EN TIEMPO REAL</string>
+    <string name="new_orders_today">Pedidos nuevos hoy</string>
+    <string name="manage_orders">Gestionar Pedidos</string>
+    <string name="low_stock_alerts">Notificaciones de Stock Bajo</string>
+    <string name="critical">CRÍTICO</string>
+    <string name="reorder">REORDENAR</string>
+
+    <!-- Admin -->
+    <string name="store_control">Control de Tiendas</string>
+    <string name="store_network_governance">Gobernanza de la Red de Tiendas</string>
+    <string name="authorize_new_store">Autorizar Nueva Tienda</string>
+    <string name="active_dispensaries">Dispensarios Activos</string>
+    <string name="sync_status">Estado de Sincronización</string>
+    <string name="database_integrity">Integridad de la Base de Datos</string>
+    <string name="verified">Verificado</string>
+    <string name="pending">Pendiente</string>
+    <string name="suspended">Suspendido</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="inventory">Inventario</string>
+    <string name="admin">Admin</string>
+    <string name="system">Sistema</string>
+    <string name="audit">Auditoría</string>
+    <string name="analytics">Análisis</string>
+    <string name="stores">Tiendas</string>
+
+    <!-- Common placeholders -->
+    <string name="product_name">Nombre del Producto</string>
+    <string name="price">Precio</string>
+    <string name="description_label">Descripción</string>
+    <string name="add_btn">Añadir</string>
+    <string name="update_btn">Actualizar</string>
+    <string name="edit">Editar</string>
+    <string name="delete">Eliminar</string>
+
+    <!-- Inventory -->
+    <string name="inventory_title">Inventario de Productos</string>
+    <string name="inventory_subtitle">Administre el stock y las categorías botánicas.</string>
+    <string name="total_stock">Stock Total</string>
+    <string name="in_danger">En Peligro</string>
+    <string name="add_product">Añadir Producto</string>
+    <string name="categories">Categorías</string>
+    <string name="demand_projections">Proyecciones de Demanda</string>
+    <string name="capacity">%1$d%% Capacidad</string>
+
+</resources>
