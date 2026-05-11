@@ -35,10 +35,16 @@ fun InventoryCrudScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (productId == null) "Agregar Producto" else "Editar Producto", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        if (productId == null) stringResource(id = R.string.add_product_title)
+                        else stringResource(id = R.string.edit_product_title),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
@@ -54,7 +60,7 @@ fun InventoryCrudScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Nombre del Producto") },
+                label = { Text(stringResource(id = R.string.product_name)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -62,7 +68,7 @@ fun InventoryCrudScreen(
             OutlinedTextField(
                 value = price,
                 onValueChange = { price = it },
-                label = { Text("Precio") },
+                label = { Text(stringResource(id = R.string.price)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -70,7 +76,7 @@ fun InventoryCrudScreen(
             OutlinedTextField(
                 value = category,
                 onValueChange = { category = it },
-                label = { Text("Categoría") },
+                label = { Text(stringResource(id = R.string.category_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -78,7 +84,7 @@ fun InventoryCrudScreen(
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Descripción") },
+                label = { Text(stringResource(id = R.string.description_label)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 minLines = 3
@@ -104,7 +110,11 @@ fun InventoryCrudScreen(
                 shape = RoundedCornerShape(12.dp),
                 enabled = name.isNotBlank() && price.isNotBlank()
             ) {
-                Text(if (productId == null) "Guardar Producto" else "Actualizar Producto", fontWeight = FontWeight.Bold)
+                Text(
+                    if (productId == null) stringResource(id = R.string.save_product)
+                    else stringResource(id = R.string.update_product),
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

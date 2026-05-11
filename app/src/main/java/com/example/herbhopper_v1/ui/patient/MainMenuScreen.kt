@@ -32,7 +32,8 @@ fun MainMenuScreen(
     onCatalogClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onPrescriptionClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onHelpClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -134,7 +135,7 @@ fun MainMenuScreen(
                     subtitle = stringResource(id = R.string.support_24_7),
                     icon = HerbHopperIcons.HelpCenter,
                     modifier = Modifier.weight(1f),
-                    onClick = {}
+                    onClick = onHelpClick
                 )
             }
 

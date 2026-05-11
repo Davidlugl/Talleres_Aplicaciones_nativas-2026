@@ -12,10 +12,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.data.Order
 import com.example.herbhopper_v1.data.OrderItem
 import com.example.herbhopper_v1.viewmodel.OrderViewModel
@@ -41,10 +43,10 @@ fun OrderDetailsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Detalles del Pedido", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.order_details_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
@@ -69,33 +71,31 @@ fun OrderDetailsScreen(
                     .padding(padding)
                     .padding(16.dp)
             ) {
-                // Header Info
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("ID: ${currentOrder.orderId}", fontWeight = FontWeight.Bold)
+                            Text(stringResource(id = R.string.order_id_label, currentOrder.orderId), fontWeight = FontWeight.Bold)
                             DetailsOrderStatusChip(status = currentOrder.status)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Cliente: ${currentOrder.userName}")
+                        Text(stringResource(id = R.string.client_label, currentOrder.userName))
                         val date = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(currentOrder.timestamp))
-                        Text("Fecha: $date")
+                        Text(stringResource(id = R.string.date_label, date))
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+                Text(stringResource(id = R.string.products_section), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
-                Text("Productos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(items) { item ->
                         ListItem(
                             headlineContent = { Text(item.productName) },
-                            supportingContent = { Text("Cantidad: ${item.quantity}") },
-                            trailingContent = { Text("$${item.price * item.quantity}") }
+                            supportingContent = { Text(stringResource(id = R.string.quantity_label, item.quantity)) },
+                            trailingContent = { Text("$${String.format("%,.0f", item.price * item.quantity)} COP") }
                         )
                         HorizontalDivider()
                     }
@@ -103,40 +103,38 @@ fun OrderDetailsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Totals & Address
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Dirección de Entrega:", fontWeight = FontWeight.Bold)
-                        Text(currentOrder.address ?: "No especificada")
+                        Text(stringResource(id = R.string.delivery_address_label), fontWeight = FontWeight.Bold)
+                        Text(currentOrder.address ?: stringResource(id = R.string.no_address))
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Total:", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                            Text("$${currentOrder.totalAmount}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(id = R.string.total_label), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text("$${String.format("%,.0f", currentOrder.totalAmount)} COP", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Actions
                 if (currentOrder.status == "PENDING" || currentOrder.status == "PENDIENTE") {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(
-                            onClick = { 
+                            onClick = {
                                 viewModel.updateOrderStatus(currentOrder.orderId, "ACCEPTED")
                                 order = currentOrder.copy(status = "ACCEPTED")
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                            colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.status_accepted))
                         ) {
                             Icon(Icons.Default.CheckCircle, null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("ACEPTAR")
+                            Text(stringResource(id = R.string.accept_order))
                         }
-                        
+
                         Button(
-                            onClick = { 
+                            onClick = {
                                 viewModel.updateOrderStatus(currentOrder.orderId, "CANCELLED")
                                 order = currentOrder.copy(status = "CANCELLED")
                             },
@@ -146,19 +144,19 @@ fun OrderDetailsScreen(
                         ) {
                             Icon(Icons.Default.Cancel, null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("CANCELAR")
+                            Text(stringResource(id = R.string.cancel_order))
                         }
                     }
                 } else if (currentOrder.status == "ACCEPTED") {
                     Button(
-                        onClick = { 
+                        onClick = {
                             viewModel.updateOrderStatus(currentOrder.orderId, "DELIVERED")
                             order = currentOrder.copy(status = "DELIVERED")
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("MARCAR COMO ENTREGADO")
+                        Text(stringResource(id = R.string.mark_as_delivered))
                     }
                 }
             }
@@ -169,10 +167,10 @@ fun OrderDetailsScreen(
 @Composable
 fun DetailsOrderStatusChip(status: String) {
     val color = when (status.uppercase()) {
-        "PENDING", "PENDIENTE" -> Color(0xFFFFA000)
-        "ACCEPTED", "ACEPTADO" -> Color(0xFF4CAF50)
-        "CANCELLED", "CANCELADO" -> Color(0xFFF44336)
-        "DELIVERED", "ENTREGADO" -> Color(0xFF2196F3)
+        "PENDING", "PENDIENTE" -> colorResource(id = R.color.status_pending)
+        "ACCEPTED", "ACEPTADO" -> colorResource(id = R.color.status_accepted)
+        "CANCELLED", "CANCELADO" -> colorResource(id = R.color.status_cancelled)
+        "DELIVERED", "ENTREGADO" -> colorResource(id = R.color.status_delivered)
         else -> MaterialTheme.colorScheme.secondary
     }
     Surface(

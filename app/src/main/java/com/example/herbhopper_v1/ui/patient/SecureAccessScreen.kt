@@ -31,43 +31,62 @@ fun SecureAccessScreen(
     onAdminAccess: () -> Unit,
     onSellerAccess: () -> Unit
 ) {
-    var showProfileModal by remember { mutableStateOf(false) }
+    var showGoogleSelector by remember { mutableStateOf(false) }
 
-    if (showProfileModal) {
+    if (showGoogleSelector) {
         AlertDialog(
-            onDismissRequest = { showProfileModal = false },
-            title = { Text("Seleccionar Perfil", fontWeight = FontWeight.Bold) },
+            onDismissRequest = { showGoogleSelector = false },
+            title = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(24.dp).background(Color.Red, CircleShape))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Continuar con Google", fontWeight = FontWeight.Bold)
+                }
+            },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
-                        onClick = { showProfileModal = false; /* Ya estamos en el flujo de paciente */ },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("Selecciona una cuenta para continuar a HerbHopper:", style = MaterialTheme.typography.bodyMedium)
+                    
+                    // Cuenta 1
+                    Card(
+                        onClick = { showGoogleSelector = false; onGoogleLogin() },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Paciente")
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("D", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text("David G.", fontWeight = FontWeight.Bold)
+                                Text("david.g@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
-                    Button(
-                        onClick = { showProfileModal = false; onSellerAccess() },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+
+                    // Cuenta 2
+                    Card(
+                        onClick = { showGoogleSelector = false; onGoogleLogin() },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Vendedor")
-                    }
-                    Button(
-                        onClick = { showProfileModal = false; onAdminAccess() },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                    ) {
-                        Text("Administrador")
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("H", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer) }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text("HerbHopper Dev", fontWeight = FontWeight.Bold)
+                                Text("dev@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { showProfileModal = false }) {
-                    Text("Cerrar")
-                }
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showGoogleSelector = false }) { Text("Cancelar") }
             }
         )
     }
@@ -145,7 +164,7 @@ fun SecureAccessScreen(
                     Column(modifier = Modifier.padding(24.dp)) {
                         // Google Login
                         Button(
-                            onClick = onGoogleLogin,
+                            onClick = { showGoogleSelector = true },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -180,8 +199,8 @@ fun SecureAccessScreen(
                         // Email Login Option
                         AccessOption(
                             icon = Icons.Default.Email,
-                            title = "Correo y Contraseña",
-                            subtitle = "Acceso con tus credenciales registradas",
+                            title = stringResource(id = R.string.email_and_password),
+                            subtitle = stringResource(id = R.string.email_and_password_subtitle),
                             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                             iconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             onClick = onPinClick // Reutilizamos onPinClick para ir a login
@@ -204,9 +223,7 @@ fun SecureAccessScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    TextButton(onClick = { showProfileModal = true }) {
-                        Text("Cambiar Perfil", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
-                    }
+
                     
                     HorizontalDivider(modifier = Modifier.width(200.dp).padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                     

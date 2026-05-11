@@ -12,15 +12,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.data.UserProfile
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserManagementScreen(onBack: () -> Unit) {
-    // Datos simulados de usuarios
     val users = remember {
         mutableStateListOf(
             UserProfile("1", "Juan Perez", "juan@mail.com", role = "PATIENT"),
@@ -29,24 +31,74 @@ fun UserManagementScreen(onBack: () -> Unit) {
             UserProfile("4", "Carlos Ruiz", "carlos@mail.com", role = "PATIENT")
         )
     }
+    
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var sortByName by remember { mutableStateOf(true) }
+    var newName by remember { mutableStateOf("") }
+    var newEmail by remember { mutableStateOf("") }
+    var newRole by remember { mutableStateOf("PATIENT") }
+    val context = LocalContext.current
+
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("Crear Usuario") },
+            text = {
+                Column {
+                    OutlinedTextField(value = newName, onValueChange = { newName = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(value = newEmail, onValueChange = { newEmail = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Rol:")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(selected = newRole == "PATIENT", onClick = { newRole = "PATIENT" }, label = { Text("Paciente") })
+                        FilterChip(selected = newRole == "SELLER", onClick = { newRole = "SELLER" }, label = { Text("Vendedor") })
+                        FilterChip(selected = newRole == "ADMIN", onClick = { newRole = "ADMIN" }, label = { Text("Admin") })
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newName.isNotBlank() && newEmail.isNotBlank()) {
+                        users.add(UserProfile(System.currentTimeMillis().toString(), newName, newEmail, role = newRole))
+                        showCreateDialog = false
+                        newName = ""
+                        newEmail = ""
+                        newRole = "PATIENT"
+                        Toast.makeText(context, "Usuario Creado", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text("Crear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Gestión de Usuarios", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.user_management_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Filtro */ }) { Icon(Icons.Default.FilterList, null) }
+                    IconButton(onClick = { 
+                        sortByName = !sortByName
+                        if (sortByName) {
+                            users.sortBy { it.name }
+                        } else {
+                            users.sortBy { it.role }
+                        }
+                    }) { Icon(Icons.Default.SortByAlpha, null, tint = MaterialTheme.colorScheme.primary) }
                 }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { /* Crear usuario */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add User")
+            FloatingActionButton(onClick = { showCreateDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.add_user))
             }
         }
     ) { padding ->
@@ -122,10 +174,10 @@ fun UserItem(
 
             Row {
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(id = R.string.edit), tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(id = R.string.delete), tint = MaterialTheme.colorScheme.error)
                 }
             }
         }

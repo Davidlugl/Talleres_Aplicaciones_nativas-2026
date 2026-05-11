@@ -12,9 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.components.AdminBottomNavBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,7 +26,7 @@ fun GlobalAnalyticsScreen(onNavigate: (String) -> Unit = {}) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Analítica Global", fontWeight = FontWeight.Bold) }
+                title = { Text(stringResource(id = R.string.global_analytics_title), fontWeight = FontWeight.Bold) }
             )
         },
         bottomBar = { AdminBottomNavBar(currentRoute = "analytics", onNavigate = onNavigate) }
@@ -35,19 +38,18 @@ fun GlobalAnalyticsScreen(onNavigate: (String) -> Unit = {}) {
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            Text("Resumen de Red", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(stringResource(id = R.string.network_summary), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             AnalyticsStat("Ventas Totales", "$124,500.00", "+8.2%")
             AnalyticsStat("Usuarios Activos", "1,240", "+12.5%")
             AnalyticsStat("Transacciones", "5,820", "-2.1%")
-            
+
             Spacer(modifier = Modifier.height(32.dp))
-            
-            Text("Rendimiento por Región", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+            Text(stringResource(id = R.string.performance_by_region), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Region Bar Chart Placeholder
+
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 RegionRow("Bogotá", 0.85f, MaterialTheme.colorScheme.primary)
                 RegionRow("Medellín", 0.65f, MaterialTheme.colorScheme.secondary)
@@ -69,7 +71,11 @@ fun AnalyticsStat(label: String, value: String, change: String) {
                 Text(label, style = MaterialTheme.typography.labelMedium)
                 Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             }
-            Text(change, color = if (change.startsWith("+")) Color(0xFF4CAF50) else Color(0xFFF44336), fontWeight = FontWeight.Bold)
+            Text(
+                change,
+                color = if (change.startsWith("+")) colorResource(id = R.color.status_accepted) else colorResource(id = R.color.status_cancelled),
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }

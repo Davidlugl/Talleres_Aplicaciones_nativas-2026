@@ -33,4 +33,14 @@
     <color name="surface_variant">#E1E3E4</color>
     <color name="on_surface_variant">#414844</color>
     <color name="outline">#717973</color>
+
+    <!-- Order Status Colors -->
+    <color name="status_pending">#FFA000</color>
+    <color name="status_accepted">#4CAF50</color>
+    <color name="status_cancelled">#F44336</color>
+    <color name="status_delivered">#2196F3</color>
+
+    <!-- System / Infra Colors -->
+    <color name="system_online">#4CAF50</color>
+    <color name="system_maintenance">#FFC107</color>
 </resources>

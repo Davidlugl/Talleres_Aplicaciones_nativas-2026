@@ -1,31 +1,18 @@
-@file:Suppress("DEPRECATION")
-
 package com.example.herbhopper_v1.ui.patient
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,17 +20,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.theme.*
+import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.launch
 import com.google.firebase.auth.GoogleAuthProvider as GoogleAuthProvider1
 
+@Suppress("DEPRECATION")
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onPatientSuccess: () -> Unit,
+    onSellerSuccess: () -> Unit,
+    onAdminSuccess: () -> Unit,
     onForgotPasswordClick: () -> Unit = {},
     profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
@@ -55,57 +47,67 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var pendingUser by remember { mutableStateOf<com.google.firebase.auth.FirebaseUser?>(null) }
-    
+
     val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
-    val db = try { FirebaseFirestore.getInstance() } catch (e: Exception) { null }
 
-    fun completeLogin(
-        firebaseUser: com.google.firebase.auth.FirebaseUser?,
-        role: String,
-        viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel,
-        onSuccess: () -> Unit
-    ) {
-        if (firebaseUser != null) {
-            val profile = com.example.herbhopper_v1.data.UserProfile(
-                uid = firebaseUser.uid,
-                name = firebaseUser.displayName ?: "Usuario",
-                email = firebaseUser.email ?: "",
-                role = role
-            )
-            viewModel.saveProfile(profile)
-            onSuccess()
-        }
-    }
+    var showGoogleSelector by remember { mutableStateOf(false) }
 
-    if (showProfileModal) {
+    if (showGoogleSelector) {
         AlertDialog(
-            onDismissRequest = { showProfileModal = false },
-            title = { Text("Seleccionar Perfil", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { 
-                        completeLogin(pendingUser, "PATIENT", profileViewModel, onLoginSuccess)
-                        showProfileModal = false 
-                    }, modifier = Modifier.fillMaxWidth()) { Text("Paciente") }
-                    
-                    Button(onClick = { 
-                        completeLogin(pendingUser, "SELLER", profileViewModel, onLoginSuccess)
-                        showProfileModal = false 
-                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)) { Text("Vendedor") }
-                    
-                    Button(onClick = { 
-                        completeLogin(pendingUser, "ADMIN", profileViewModel, onLoginSuccess)
-                        showProfileModal = false 
-                    }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)) { Text("Administrador") }
+            onDismissRequest = { showGoogleSelector = false },
+            title = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(24.dp).background(Color.Red, CircleShape))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Continuar con Google", fontWeight = FontWeight.Bold)
                 }
             },
-            confirmButton = { TextButton(onClick = { showProfileModal = false }) { Text("Cerrar") } }
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("Selecciona una cuenta para continuar:", style = MaterialTheme.typography.bodyMedium)
+                    
+                    Card(
+                        onClick = { showGoogleSelector = false; onPatientSuccess() },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("J", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text("Juan Paciente", fontWeight = FontWeight.Bold)
+                                Text("juan@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    Card(
+                        onClick = { showGoogleSelector = false; onSellerSuccess() },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("V", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer) }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text("Vendedor Herb", fontWeight = FontWeight.Bold)
+                                Text("seller@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { showGoogleSelector = false }) { Text("Cancelar") } }
         )
     }
 
-    // Configuración de Google Sign-In
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(context.getString(R.string.default_web_client_id)) 
+        .requestIdToken(context.getString(R.string.default_web_client_id))
         .requestEmail()
         .build()
     val googleSignInClient = GoogleSignIn.getClient(context, gso)
@@ -121,7 +123,7 @@ fun LoginScreen(
                     ?.addOnCompleteListener { taskAuth ->
                         if (taskAuth.isSuccessful) {
                             pendingUser = auth.currentUser
-                            showProfileModal = true // Preguntar por el perfil
+                            showProfileModal = true
                             isLoading = false
                         } else {
                             isLoading = false
@@ -138,7 +140,6 @@ fun LoginScreen(
         color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Decorative background elements
             Box(
                 modifier = Modifier
                     .size(400.dp)
@@ -154,9 +155,7 @@ fun LoginScreen(
             )
 
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
+                modifier = Modifier.fillMaxSize().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (isLoading) {
@@ -164,8 +163,7 @@ fun LoginScreen(
                 }
 
                 Spacer(modifier = Modifier.height(48.dp))
-                
-                // Header
+
                 Text(
                     text = stringResource(id = R.string.app_name),
                     style = MaterialTheme.typography.headlineLarge,
@@ -181,19 +179,14 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(64.dp))
 
-                // Login Fields Area
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    shape = RoundedCornerShape(32.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(32.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(
-                        modifier = Modifier
-                            .padding(32.dp)
-                            .fillMaxWidth(),
+                        modifier = Modifier.padding(32.dp).fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -235,22 +228,19 @@ fun LoginScreen(
                         Button(
                             onClick = {
                                 if (email.isNotBlank() && password.isNotBlank()) {
-                                    if (auth == null) {
-                                        android.widget.Toast.makeText(context, "Error: Firebase no inicializado", android.widget.Toast.LENGTH_SHORT).show()
-                                        return@Button
-                                    }
                                     isLoading = true
-                                    auth.signInWithEmailAndPassword(email, password)
-                                        .addOnCompleteListener { task ->
-                                            if (task.isSuccessful) {
-                                                // En una app real, aquí buscaríamos el perfil en Firestore
-                                                // Para esta simulación, usaremos el completeLogin con un rol por defecto o guardado
-                                                completeLogin(auth.currentUser, "PATIENT", profileViewModel, onLoginSuccess)
-                                            } else {
-                                                isLoading = false
-                                                android.widget.Toast.makeText(context, "Error: ${task.exception?.message}", android.widget.Toast.LENGTH_SHORT).show()
-                                            }
+                                    scope.launch {
+                                        kotlinx.coroutines.delay(1000)
+                                        isLoading = false
+                                        val lowercaseEmail = email.lowercase()
+                                        if (lowercaseEmail.contains("admin")) {
+                                            onAdminSuccess()
+                                        } else if (lowercaseEmail.contains("seller")) {
+                                            onSellerSuccess()
+                                        } else {
+                                            onPatientSuccess()
                                         }
+                                    }
                                 } else {
                                     android.widget.Toast.makeText(context, "Por favor ingrese correo y contraseña", android.widget.Toast.LENGTH_SHORT).show()
                                 }
@@ -258,21 +248,20 @@ fun LoginScreen(
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Text("INICIAR SESIÓN", fontWeight = FontWeight.Bold)
+                            Text(stringResource(id = R.string.login_start_session), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Alternative Options Section
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                     Text(
-                        text = "O CONTINUAR CON",
+                        text = stringResource(id = R.string.or_continue_with_caps),
                         modifier = Modifier.padding(horizontal = 16.dp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelSmall,
@@ -284,72 +273,19 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 OutlinedButton(
-                    onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                    onClick = { showGoogleSelector = true },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Aquí podrías poner un icono de Google
-                        Text("Continuar con Google", fontWeight = FontWeight.Bold)
+                        Text(stringResource(id = R.string.continue_google_btn), fontWeight = FontWeight.Bold)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-
-                // Quick Simulation Section
-                Text(
-                    "SIMULACIÓN RÁPIDA",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { 
-                            val dummyProfile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_patient",
-                                name = "Paciente Simulado",
-                                email = "paciente@herbhopper.com",
-                                role = "PATIENT"
-                            )
-                            profileViewModel.saveProfile(dummyProfile)
-                            onLoginSuccess() 
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("PACIENTE")
-                    }
-
-                    Button(
-                        onClick = { 
-                            val dummyProfile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_admin",
-                                name = "Admin Simulado",
-                                email = "admin@herbhopper.com",
-                                role = "ADMIN"
-                            )
-                            profileViewModel.saveProfile(dummyProfile)
-                            onLoginSuccess() 
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
-                    ) {
-                        Text("ADMIN")
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Footer
-                TextButton(onClick = { showProfileModal = true }) {
-                    Text("Cambiar Perfil", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                }
 
                 TextButton(onClick = onForgotPasswordClick) {
                     Text(

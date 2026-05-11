@@ -28,7 +28,7 @@ fun AuditPanelScreen(onNavigate: (String) -> Unit = {}) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Panel de Auditoría", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.audit_panel_title), fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },

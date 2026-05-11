@@ -34,7 +34,7 @@ import com.example.herbhopper_v1.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PrescriptionValidationScreen(onBack: () -> Unit) {
+fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {}) {
     val context = LocalContext.current
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     
@@ -75,7 +75,7 @@ fun PrescriptionValidationScreen(onBack: () -> Unit) {
                     IconButton(onClick = onBack) { Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.AutoMirrored.Filled.HelpOutline, null, tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = onHelpClick) { Icon(Icons.AutoMirrored.Filled.HelpOutline, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
             )
@@ -187,7 +187,7 @@ fun PrescriptionValidationScreen(onBack: () -> Unit) {
                         ControlButton(
                             icon = Icons.Default.FlashOn, 
                             label = stringResource(id = R.string.flash),
-                            onClick = { }
+                            onClick = { Toast.makeText(context, "Flash automático activado", Toast.LENGTH_SHORT).show() }
                         )
                     }
 

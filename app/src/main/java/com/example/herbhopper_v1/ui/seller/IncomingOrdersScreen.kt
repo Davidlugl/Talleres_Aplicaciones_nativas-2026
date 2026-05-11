@@ -12,10 +12,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.data.Order
 import com.example.herbhopper_v1.viewmodel.OrderViewModel
 import java.text.SimpleDateFormat
@@ -24,7 +26,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IncomingOrdersScreen(
-    onBack: () -> Unit = {}, 
+    onBack: () -> Unit = {},
     onNavigate: (String) -> Unit = {},
     viewModel: OrderViewModel = viewModel()
 ) {
@@ -33,19 +35,19 @@ fun IncomingOrdersScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Pedidos Entrantes", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.incoming_orders_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
         },
-        bottomBar = { 
+        bottomBar = {
             SellerBottomNavBar(
                 currentRoute = "orders",
                 onNavigate = onNavigate
-            ) 
+            )
         }
     ) { padding ->
         LazyColumn(
@@ -83,25 +85,29 @@ fun OrderCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Pedido #${order.orderId.takeLast(4)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    stringResource(id = R.string.order_number, order.orderId.takeLast(4)),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
                 IncomingOrderStatusChip(status = order.status)
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Cliente: ${order.userName}", style = MaterialTheme.typography.bodyMedium)
-            Text("Total: $${order.totalAmount}", fontWeight = FontWeight.Bold)
-            
+            Text(stringResource(id = R.string.order_client, order.userName), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(id = R.string.order_total, "$${String.format("%,.0f", order.totalAmount)} COP"), fontWeight = FontWeight.Bold)
+
             val date = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(Date(order.timestamp))
-            Text("Fecha: $date", style = MaterialTheme.typography.labelSmall)
+            Text(stringResource(id = R.string.order_date, date), style = MaterialTheme.typography.labelSmall)
 
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (order.status == "PENDING") {
                     Button(onClick = onAccept, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) {
-                        Text("Aceptar")
+                        Text(stringResource(id = R.string.accept_btn))
                     }
                 }
                 OutlinedButton(onClick = onDetails, modifier = Modifier.weight(1f), shape = RoundedCornerShape(8.dp)) {
-                    Text("Detalles")
+                    Text(stringResource(id = R.string.details_btn))
                 }
             }
         }
@@ -111,10 +117,10 @@ fun OrderCard(
 @Composable
 fun IncomingOrderStatusChip(status: String) {
     val color = when (status.uppercase()) {
-        "PENDING" -> Color(0xFFFFA000)
-        "ACCEPTED" -> Color(0xFF4CAF50)
-        "CANCELLED" -> Color(0xFFF44336)
-        "DELIVERED" -> Color(0xFF2196F3)
+        "PENDING" -> colorResource(id = R.color.status_pending)
+        "ACCEPTED" -> colorResource(id = R.color.status_accepted)
+        "CANCELLED" -> colorResource(id = R.color.status_cancelled)
+        "DELIVERED" -> colorResource(id = R.color.status_delivered)
         else -> MaterialTheme.colorScheme.secondary
     }
     Surface(

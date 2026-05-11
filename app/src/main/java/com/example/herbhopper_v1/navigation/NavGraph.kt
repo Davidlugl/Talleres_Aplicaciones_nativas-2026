@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.example.herbhopper_v1.data.Product
 import com.example.herbhopper_v1.ui.admin.*
 import com.example.herbhopper_v1.ui.admin.crud.ProductCrudScreen
+import com.example.herbhopper_v1.ui.admin.AdminProfileScreen
 import com.example.herbhopper_v1.ui.patient.*
 import com.example.herbhopper_v1.ui.seller.*
 import com.example.herbhopper_v1.viewmodel.CartViewModel
@@ -52,7 +53,9 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("login") { 
             LoginScreen(
-                onLoginSuccess = { navController.navigate("catalog") },
+                onPatientSuccess = { navController.navigate("catalog") },
+                onSellerSuccess = { navController.navigate("seller_dashboard") },
+                onAdminSuccess = { navController.navigate("store_governance") },
                 onForgotPasswordClick = { navController.navigate("forgot_password") }
             ) 
         }
@@ -68,7 +71,8 @@ fun NavGraph(navController: NavHostController) {
                 onCatalogClick = { navController.navigate("catalog") },
                 onOrdersClick = { navController.navigate("order_history") },
                 onPrescriptionClick = { navController.navigate("prescription_validation") },
-                onProfileClick = { navController.navigate("profile") }
+                onProfileClick = { navController.navigate("profile") },
+                onHelpClick = { navController.navigate("help_center") }
             ) 
         }
         composable("catalog") { 
@@ -99,7 +103,10 @@ fun NavGraph(navController: NavHostController) {
             }
         }
         composable("prescription_validation") { 
-            PrescriptionValidationScreen(onBack = { navController.popBackStack() }) 
+            PrescriptionValidationScreen(
+                onBack = { navController.popBackStack() },
+                onHelpClick = { navController.navigate("help_center") }
+            ) 
         }
         composable("cart") { 
             CartScreen(
@@ -125,7 +132,8 @@ fun NavGraph(navController: NavHostController) {
                 onHomeClick = { navController.navigate("catalog") },
                 onOrdersClick = { },
                 onScriptsClick = { navController.navigate("prescription_validation") },
-                onProfileClick = { navController.navigate("profile") }
+                onProfileClick = { navController.navigate("profile") },
+                onCartClick = { navController.navigate("cart") }
             )
         }
         composable("order_tracking") { 
@@ -133,7 +141,8 @@ fun NavGraph(navController: NavHostController) {
                 onHomeClick = { navController.navigate("catalog") },
                 onOrdersClick = { navController.navigate("order_history") },
                 onScriptsClick = { navController.navigate("prescription_validation") },
-                onProfileClick = { navController.navigate("profile") }
+                onProfileClick = { navController.navigate("profile") },
+                onCartClick = { navController.navigate("cart") }
             )
         }
         composable("profile") {
@@ -153,7 +162,13 @@ fun NavGraph(navController: NavHostController) {
             ProfileSettingsScreen(title = option, onBack = { navController.popBackStack() })
         }
         composable("help_center") {
-            HelpCenterScreen(onBack = { navController.popBackStack() })
+            HelpCenterScreen(
+                onBack = { navController.popBackStack() },
+                onChatClick = { navController.navigate("chat") }
+            )
+        }
+        composable("chat") {
+            ChatScreen(onBack = { navController.popBackStack() })
         }
 
         // Seller Flow
@@ -213,6 +228,13 @@ fun NavGraph(navController: NavHostController) {
         // Admin Flow
         composable("store_governance") { 
             StoreGovernanceScreen(
+                onNavigate = { navController.navigate(it) },
+                onLogout = { navController.navigate("secure_access") }
+            )
+        }
+        composable("admin_profile") {
+            AdminProfileScreen(
+                onBack = { navController.popBackStack() },
                 onNavigate = { navController.navigate(it) },
                 onLogout = { navController.navigate("secure_access") }
             )

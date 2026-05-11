@@ -13,13 +13,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.theme.*
 import com.example.herbhopper_v1.ui.components.HerbHopperIcons
@@ -27,18 +27,19 @@ import com.example.herbhopper_v1.ui.components.HerbHopperIcons
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SellerDashboardScreen(onNavigate: (String) -> Unit = {}) {
+    val context = LocalContext.current
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("Botanical Precision", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(id = R.string.store_name), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Settings, null, tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = { onNavigate("store_profile") }) { Icon(Icons.Default.Settings, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
             )
@@ -55,7 +56,7 @@ fun SellerDashboardScreen(onNavigate: (String) -> Unit = {}) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(stringResource(id = R.string.seller_dashboard_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
             Text(stringResource(id = R.string.seller_welcome), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // Main Stats Card
@@ -69,15 +70,15 @@ fun SellerDashboardScreen(onNavigate: (String) -> Unit = {}) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
                             Text(stringResource(id = R.string.daily_sales_summary), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
-                            Text("$4,820.50", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(stringResource(id = R.string.dummy_sales_amount), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = CircleShape) {
-                            Text("+12.5% vs ayer", modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                            Text(stringResource(id = R.string.dummy_sales_increase), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(32.dp))
-                    
+
                     // Chart Placeholder
                     Row(
                         modifier = Modifier.fillMaxWidth().height(120.dp),
@@ -113,11 +114,11 @@ fun SellerDashboardScreen(onNavigate: (String) -> Unit = {}) {
                         }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text("24", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onPrimary)
+                    Text(stringResource(id = R.string.dummy_new_orders), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onPrimary)
                     Text(stringResource(id = R.string.new_orders_today), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
-                        onClick = {},
+                        onClick = { onNavigate("incoming_orders") },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary)
@@ -191,7 +192,7 @@ fun SellerBottomNavBar(currentRoute: String, onNavigate: (String) -> Unit = {}) 
             selected = currentRoute == "profile",
             onClick = { onNavigate("store_profile") },
             icon = { Icon(Icons.Default.Store, null) },
-            label = { Text("Perfil") }
+            label = { Text(stringResource(id = R.string.nav_profile)) }
         )
     }
 }

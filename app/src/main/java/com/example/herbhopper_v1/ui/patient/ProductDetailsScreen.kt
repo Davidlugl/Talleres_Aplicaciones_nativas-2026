@@ -81,13 +81,13 @@ fun ProductDetailsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Surface(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
-                        Text("PREMIUM GRADE", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                        Text(stringResource(id = R.string.premium_grade), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                Text("Herb Hopper Premium", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
+                Text(stringResource(id = R.string.herb_hopper_premium), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
                 Text(product.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 4.dp))
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -127,7 +127,7 @@ fun ProductDetailsScreen(
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
                         Row(verticalAlignment = Alignment.Bottom) {
-                            Text("$${product.price}", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                            Text("$${String.format("%,.0f", product.price)} COP", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                             Text(stringResource(id = R.string.per_bottle, "30ml"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp, bottom = 4.dp))
                         }
                         Spacer(modifier = Modifier.height(24.dp))

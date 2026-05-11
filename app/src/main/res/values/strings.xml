@@ -170,4 +170,185 @@
     <string name="demand_projections">Proyecciones de Demanda</string>
     <string name="capacity">%1$d%% Capacidad</string>
 
+    <!-- Seller Profile -->
+    <string name="store_profile_title">Perfil de Tienda</string>
+    <string name="back">Atrás</string>
+    <string name="store_name">Botanical Precision</string>
+    <string name="verified_seller">Vendedor Verificado</string>
+    <string name="edit_info">Editar Información</string>
+    <string name="store_location">Ubicación de Tienda</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="payment_account">Cuenta de Cobro</string>
+    <string name="security">Seguridad</string>
+    <string name="close_session">Cerrar Sesión</string>
+    <string name="nav_profile">Perfil</string>
+
+    <!-- Order Details -->
+    <string name="order_details_title">Detalles del Pedido</string>
+    <string name="order_id_label">ID: %1$s</string>
+    <string name="client_label">Cliente: %1$s</string>
+    <string name="date_label">Fecha: %1$s</string>
+    <string name="products_section">Productos</string>
+    <string name="quantity_label">Cantidad: %1$d</string>
+    <string name="delivery_address_label">Dirección de Entrega:</string>
+    <string name="no_address">No especificada</string>
+    <string name="total_label">Total:</string>
+    <string name="accept_order">ACEPTAR</string>
+    <string name="cancel_order">CANCELAR</string>
+    <string name="mark_as_delivered">MARCAR COMO ENTREGADO</string>
+
+    <!-- Incoming Orders -->
+    <string name="incoming_orders_title">Pedidos Entrantes</string>
+    <string name="order_number">Pedido #%1$s</string>
+    <string name="order_client">Cliente: %1$s</string>
+    <string name="order_total">Total: $%1$s</string>
+    <string name="order_date">Fecha: %1$s</string>
+    <string name="accept_btn">Aceptar</string>
+    <string name="details_btn">Detalles</string>
+
+    <!-- Inventory CRUD -->
+    <string name="add_product_title">Agregar Producto</string>
+    <string name="edit_product_title">Editar Producto</string>
+    <string name="category_label">Categoría</string>
+    <string name="save_product">Guardar Producto</string>
+    <string name="update_product">Actualizar Producto</string>
+
+    <!-- Checkout -->
+    <string name="payment_gateway_title">Pasarela de Pago</string>
+    <string name="payment_summary_title">Resumen de Pago</string>
+    <string name="total_to_pay">Total a pagar</string>
+    <string name="select_payment_method">Seleccione Método de Pago</string>
+    <string name="credit_card_method">Tarjeta de Crédito / Débito</string>
+    <string name="bank_transfer_method">Transferencia Bancaria (PSE)</string>
+    <string name="cash_method">Efectivo (Puntos de pago)</string>
+    <string name="pay_now">PAGAR AHORA</string>
+    <string name="card_number_label">Número de Tarjeta</string>
+    <string name="card_number_placeholder">0000 0000 0000 0000</string>
+    <string name="expiry_label">Vencimiento</string>
+    <string name="expiry_placeholder">MM/AA</string>
+    <string name="cvv_label">CVV</string>
+    <string name="cvv_placeholder">123</string>
+
+    <!-- Forgot Password -->
+    <string name="recover_password_title">Recuperar Contraseña</string>
+    <string name="recover_password_subtitle">Introduce tu correo electrónico para recibir un enlace de recuperación.</string>
+    <string name="email_field_label">Correo Electrónico</string>
+    <string name="send_link_btn">Enviar Enlace</string>
+    <string name="sent_success_title">¡Enviado!</string>
+    <string name="sent_success_msg">Hemos enviado las instrucciones de recuperación a %1$s</string>
+    <string name="retry_btn">Volver a intentar</string>
+
+    <!-- Help Center -->
+    <string name="faq_title">Preguntas Frecuentes</string>
+    <string name="need_more_help">¿Necesitas más ayuda?</string>
+    <string name="live_chat_btn">Chat en vivo</string>
+    <string name="send_email_btn">Enviar Correo</string>
+    <!-- FAQs -->
+    <string name="faq_q1">¿Cómo valido mi receta?</string>
+    <string name="faq_a1">Puedes subir una foto de tu receta en la sección \'Cargar Fórmula\'. Nuestro equipo la validará en menos de 24 horas.</string>
+    <string name="faq_q2">¿Aceptan seguros médicos?</string>
+    <string name="faq_a2">Actualmente aceptamos los principales seguros médicos nacionales para fórmulas magistrales.</string>
+    <string name="faq_q3">¿Cuánto tarda el envío?</string>
+    <string name="faq_a3">Los envíos en áreas metropolitanas tardan entre 2 a 4 horas. En otras regiones, de 24 a 48 horas.</string>
+    <string name="faq_q4">¿Los productos son legales?</string>
+    <string name="faq_a4">Sí, Herb Hopper opera bajo todas las licencias del INVIMA y el Ministerio de Salud de Colombia.</string>
+
+    <!-- Login -->
+    <string name="login_start_session">INICIAR SESIÓN</string>
+    <string name="or_continue_with_caps">O CONTINUAR CON</string>
+    <string name="continue_google_btn">Continuar con Google</string>
+    <string name="quick_simulation">SIMULACIÓN RÁPIDA</string>
+    <string name="patient_btn">PACIENTE</string>
+    <string name="admin_btn">ADMIN</string>
+    <string name="change_profile_btn">Cambiar Perfil</string>
+    <string name="select_profile_title">Seleccionar Perfil</string>
+    <string name="role_patient">Paciente</string>
+    <string name="role_seller">Vendedor</string>
+    <string name="role_admin">Administrador</string>
+    <string name="close_btn">Cerrar</string>
+    <string name="simulated_patient_name">Paciente Simulado</string>
+    <string name="simulated_admin_name">Admin Simulado</string>
+
+    <!-- Secure Access -->
+    <string name="email_and_password">Correo y Contraseña</string>
+    <string name="email_and_password_subtitle">Acceso con tus credenciales registradas</string>
+    <string name="change_profile_secondary">Cambiar Perfil</string>
+    <string name="select_profile_register_title">Seleccionar Perfil de Registro</string>
+    <string name="change_register_profile">Cambiar Perfil de Registro</string>
+
+    <!-- ProfileSettings -->
+    <string name="saved_cards_title">Tus Tarjetas Guardadas</string>
+    <string name="default_method">Método Predeterminado</string>
+    <string name="no_saved_cards">No tienes tarjetas guardadas</string>
+    <string name="add_new_method">Añadir Nuevo Método</string>
+    <string name="change_card">Cambiar Tarjeta</string>
+    <string name="delivery_addresses_title">Direcciones de Entrega</string>
+    <string name="no_saved_addresses">No tienes direcciones guardadas</string>
+    <string name="add_new_address">Añadir Nueva Dirección</string>
+    <string name="change_address">Cambiar Dirección</string>
+    <string name="main_address_label">Principal</string>
+    <string name="personal_info_title">Información Personal</string>
+    <string name="full_name_label">Nombre Completo</string>
+    <string name="phone_label">Teléfono</string>
+    <string name="email_settings_label">Correo Electrónico</string>
+    <string name="save_changes_btn">GUARDAR CAMBIOS</string>
+    <string name="notification_prefs_title">Preferencias de Notificación</string>
+    <string name="push_notifications">Notificaciones Push</string>
+    <string name="email_promotions">Promociones por Email</string>
+    <string name="order_alerts">Alertas de Pedido</string>
+    <string name="account_security">Seguridad de la Cuenta</string>
+    <string name="add_update_card_title">Añadir/Actualizar Tarjeta</string>
+    <string name="card_digits_placeholder">16 dígitos</string>
+    <string name="save_btn">Guardar</string>
+    <string name="cancel_btn">Cancelar</string>
+    <string name="complete_address_label">Dirección completa</string>
+    <string name="delivery_address_dialog_title">Dirección de Entrega</string>
+
+    <!-- Admin -->
+    <string name="users_label">Usuarios</string>
+    <string name="user_management_title">Gestión de Usuarios</string>
+    <string name="audit_panel_title">Panel de Auditoría</string>
+    <string name="global_analytics_title">Analítica Global</string>
+    <string name="network_summary">Resumen de Red</string>
+    <string name="performance_by_region">Rendimiento por Región</string>
+    <string name="system_infra_title">Infraestructura de Sistema</string>
+    <string name="server_status_title">Estado de Servidores</string>
+    <string name="restart_services_btn">Reiniciar Servicios</string>
+    <string name="product_crud_title">Gestión de Productos (CRUD)</string>
+    <string name="category_hint">Categoría (Aceite, Flor, Cápsulas, etc.)</string>
+    <string name="verify_compliance_subtitle">Verify compliance and manage certifications.</string>
+    <string name="total_verified_label">Total Verified</string>
+    <string name="pending_review_label">Pending Review</string>
+    <string name="db_integrity_progress">85%% Complete</string>
+
+    <!-- Additional Placeholders & Dummies -->
+    <string name="add_user">Añadir Usuario</string>
+    <string name="verify">Verificar</string>
+    <string name="premium_grade">GRADO PREMIUM</string>
+    <string name="herb_hopper_premium">Herb Hopper Premium</string>
+    <string name="map_placeholder">Marcador de Mapa</string>
+    <string name="bolt_ev_2">Bolt EV-2</string>
+    <string name="empty_cart">Tu carrito está vacío</string>
+    <string name="botanico">BOTÁNICO</string>
+    <string name="no_products_available">No hay productos disponibles.</string>
+    <string name="aura_blend_special">Aura Blend Special</string>
+    <string name="john_doe">John Doe</string>
+    <string name="john_example_email">john@example.com</string>
+    <string name="dummy_phone">+1 (555) 000-0000</string>
+    <string name="dummy_password">••••••••</string>
+    <string name="dummy_sales_amount">$ 4.820.500 COP</string>
+    <string name="dummy_sales_increase">+12.5%% vs ayer</string>
+    <string name="dummy_new_orders">24</string>
+    <string name="dummy_order_id">#BP-88291</string>
+    <string name="dummy_order_date">12 Oct 2023</string>
+    <string name="dummy_order_product">Extracto de Salvia</string>
+    <string name="dummy_order_price">$ 42.500 COP</string>
+
+    <!-- Toasts / Feedbacks -->
+    <string name="toast_live_chat_started">Iniciando chat en vivo...</string>
+    <string name="toast_email_client_opened">Abriendo cliente de correo...</string>
+    <string name="toast_services_restarting">Reiniciando servicios...</string>
+    <string name="toast_help_opened">Abriendo centro de ayuda...</string>
+    <string name="toast_settings_dev">Configuración en desarrollo...</string>
+
 </resources>

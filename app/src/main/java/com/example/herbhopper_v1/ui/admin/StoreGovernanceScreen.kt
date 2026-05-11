@@ -46,10 +46,9 @@ fun StoreGovernanceScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Cerrar Sesión", tint = MaterialTheme.colorScheme.error)
+                    IconButton(onClick = { onNavigate("admin_profile") }) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Perfil del Administrador", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                     }
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
             )
@@ -65,7 +64,7 @@ fun StoreGovernanceScreen(
             item {
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(stringResource(id = R.string.store_network_governance), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
-                Text("Verify compliance and manage certifications.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(id = R.string.verify_compliance_subtitle), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
@@ -90,8 +89,8 @@ fun StoreGovernanceScreen(
                 
                 // Stats
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SmallStatCard("Total Verified", stores.count { it.status == "VERIFIED" }.toString(), modifier = Modifier.weight(1f))
-                    SmallStatCard("Pending Review", stores.count { it.status == "PENDING" }.toString(), modifier = Modifier.weight(1f), contentColor = MaterialTheme.colorScheme.tertiary)
+                    SmallStatCard(stringResource(id = R.string.total_verified_label), stores.count { it.status == "VERIFIED" }.toString(), modifier = Modifier.weight(1f))
+                    SmallStatCard(stringResource(id = R.string.pending_review_label), stores.count { it.status == "PENDING" }.toString(), modifier = Modifier.weight(1f), contentColor = MaterialTheme.colorScheme.tertiary)
                 }
                 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -122,7 +121,7 @@ fun StoreGovernanceScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(id = R.string.database_integrity), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text("85% Complete", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(id = R.string.db_integrity_progress), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         LinearProgressIndicator(
@@ -181,7 +180,7 @@ fun StoreGovernanceItem(store: Store, onStatusChange: (String) -> Unit) {
                             Text(statusText.uppercase(), modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (store.status == "VERIFIED") MaterialTheme.colorScheme.onPrimaryContainer else if (store.status == "PENDING") MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.error)
                         }
                     }
-                    Text("${store.licenseNumber} • INVIMA Approved", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${store.licenseNumber} \u2022 " + stringResource(id = R.string.verified), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
@@ -192,7 +191,7 @@ fun StoreGovernanceItem(store: Store, onStatusChange: (String) -> Unit) {
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
-                    Text("Verify", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text(stringResource(id = R.string.verify), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 Button(
                     onClick = { 

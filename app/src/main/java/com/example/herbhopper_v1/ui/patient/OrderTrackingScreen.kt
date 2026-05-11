@@ -27,7 +27,8 @@ fun OrderTrackingScreen(
     onHomeClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onScriptsClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onCartClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -38,10 +39,10 @@ fun OrderTrackingScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.Menu, null, tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = onHomeClick) { Icon(Icons.Default.Menu, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.ShoppingBasket, null, tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = onCartClick) { Icon(Icons.Default.ShoppingBasket, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White.copy(alpha = 0.8f))
             )
@@ -74,7 +75,7 @@ fun OrderTrackingScreen(
                         .height(300.dp)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Text("Map Placeholder", modifier = Modifier.align(Alignment.Center))
+                    Text(stringResource(id = R.string.map_placeholder), modifier = Modifier.align(Alignment.Center))
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -93,7 +94,7 @@ fun OrderTrackingScreen(
                             Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape) {
                                 Text(stringResource(id = R.string.on_the_way), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSecondaryContainer)
                             }
-                            Text("#BP-88291", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(id = R.string.dummy_order_id), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -122,7 +123,7 @@ fun OrderTrackingScreen(
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(stringResource(id = R.string.vehicle_type), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("Bolt EV-2", fontWeight = FontWeight.Bold)
+                                Text(stringResource(id = R.string.bolt_ev_2), fontWeight = FontWeight.Bold)
                             }
                         }
                     }

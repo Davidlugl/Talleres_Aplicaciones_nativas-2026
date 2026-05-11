@@ -11,14 +11,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
+import android.content.Intent
+import android.net.Uri
 import com.example.herbhopper_v1.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HelpCenterScreen(onBack: () -> Unit) {
+fun HelpCenterScreen(onBack: () -> Unit, onChatClick: () -> Unit = {}) {
+    val context = LocalContext.current
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -39,7 +45,7 @@ fun HelpCenterScreen(onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Preguntas Frecuentes",
+                    stringResource(id = R.string.faq_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -48,46 +54,59 @@ fun HelpCenterScreen(onBack: () -> Unit) {
             }
 
             val faqs = listOf(
-                "¿Cómo valido mi receta?" to "Puedes subir una foto de tu receta en la sección 'Cargar Fórmula'. Nuestro equipo la validará en menos de 24 horas.",
-                "¿Aceptan seguros médicos?" to "Actualmente aceptamos los principales seguros médicos nacionales para fórmulas magistrales.",
-                "¿Cuánto tarda el envío?" to "Los envíos en áreas metropolitanas tardan entre 2 a 4 horas. En otras regiones, de 24 a 48 horas.",
-                "¿Los productos son legales?" to "Sí, Herb Hopper opera bajo todas las licencias del INVIMA y el Ministerio de Salud de Colombia."
+                R.string.faq_q1 to R.string.faq_a1,
+                R.string.faq_q2 to R.string.faq_a2,
+                R.string.faq_q3 to R.string.faq_a3,
+                R.string.faq_q4 to R.string.faq_a4
             )
 
-            items(faqs) { (question, answer) ->
-                FaqItem(question, answer)
+            items(faqs) { (questionRes, answerRes) ->
+                FaqItem(
+                    question = stringResource(id = questionRes),
+                    answer = stringResource(id = answerRes)
+                )
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
             item {
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
-                    "¿Necesitas más ayuda?",
+                    stringResource(id = R.string.need_more_help),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 Button(
-                    onClick = {},
+                    onClick = onChatClick,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.Chat, null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Chat en vivo")
+                    Text(stringResource(id = R.string.live_chat_btn))
                 }
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 OutlinedButton(
-                    onClick = {},
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:soporte@herbhopper.com")
+                            putExtra(Intent.EXTRA_SUBJECT, "Soporte Técnico")
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No hay cliente de correo instalado", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Icon(Icons.Default.Email, null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Enviar Correo")
+                    Text(stringResource(id = R.string.send_email_btn))
                 }
             }
         }

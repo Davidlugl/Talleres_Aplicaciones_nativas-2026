@@ -11,12 +11,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.theme.*
 
@@ -31,7 +29,6 @@ fun ForgotPasswordScreen(onBack: () -> Unit) {
         color = MaterialTheme.colorScheme.background
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background elements
             Box(
                 modifier = Modifier
                     .size(300.dp)
@@ -50,14 +47,14 @@ fun ForgotPasswordScreen(onBack: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "Recuperar Contraseña",
+                    text = stringResource(id = R.string.recover_password_title),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.primary
@@ -66,7 +63,7 @@ fun ForgotPasswordScreen(onBack: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Introduce tu correo electrónico para recibir un enlace de recuperación.",
+                    text = stringResource(id = R.string.recover_password_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -79,7 +76,7 @@ fun ForgotPasswordScreen(onBack: () -> Unit) {
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Correo Electrónico") },
+                        label = { Text(stringResource(id = R.string.email_field_label)) },
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -90,13 +87,11 @@ fun ForgotPasswordScreen(onBack: () -> Unit) {
 
                     Button(
                         onClick = { isSubmitted = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
                         enabled = email.isNotBlank()
                     ) {
-                        Text("Enviar Enlace", fontWeight = FontWeight.Bold)
+                        Text(stringResource(id = R.string.send_link_btn), fontWeight = FontWeight.Bold)
                     }
                 } else {
                     Card(
@@ -109,21 +104,21 @@ fun ForgotPasswordScreen(onBack: () -> Unit) {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "¡Enviado!",
+                                text = stringResource(id = R.string.sent_success_title),
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Hemos enviado las instrucciones de recuperación a $email",
+                                text = stringResource(id = R.string.sent_success_msg, email),
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(24.dp))
                             TextButton(onClick = { isSubmitted = false }) {
-                                Text("Volver a intentar", fontWeight = FontWeight.Bold)
+                                Text(stringResource(id = R.string.retry_btn), fontWeight = FontWeight.Bold)
                             }
                         }
                     }

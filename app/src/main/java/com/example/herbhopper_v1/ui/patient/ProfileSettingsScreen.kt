@@ -13,8 +13,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.herbhopper_v1.R
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,7 +31,7 @@ fun ProfileSettingsScreen(
                 title = { Text(title, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
@@ -57,7 +59,7 @@ fun ProfileSettingsScreen(
 fun PaymentSettings() {
     val context = LocalContext.current
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    
+
     val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
     val currentUser = auth?.currentUser
     val uid = currentUser?.uid ?: "dummy_uid_patient"
@@ -67,16 +69,20 @@ fun PaymentSettings() {
     var expiry by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
 
-    // Usamos collectAsState para observar cambios en tiempo real
     val profileFromDb by viewModel.observeProfile(uid).collectAsState(initial = null)
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Añadir/Actualizar Tarjeta") },
+            title = { Text(stringResource(id = R.string.add_update_card_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = cardNumber, onValueChange = { if (it.length <= 16) cardNumber = it }, label = { Text("Número de Tarjeta") }, placeholder = { Text("16 dígitos") })
+                    OutlinedTextField(
+                        value = cardNumber,
+                        onValueChange = { if (it.length <= 16) cardNumber = it },
+                        label = { Text(stringResource(id = R.string.card_number_label)) },
+                        placeholder = { Text(stringResource(id = R.string.card_digits_placeholder)) }
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = expiry,
@@ -89,11 +95,17 @@ fun PaymentSettings() {
                                     }
                                 }
                             },
-                            label = { Text("Vencimiento") },
-                            placeholder = { Text("MM/AA") },
+                            label = { Text(stringResource(id = R.string.expiry_label)) },
+                            placeholder = { Text(stringResource(id = R.string.expiry_placeholder)) },
                             modifier = Modifier.weight(1f)
                         )
-                        OutlinedTextField(value = cvv, onValueChange = { if (it.length <= 3) cvv = it }, label = { Text("CVV") }, placeholder = { Text("123") }, modifier = Modifier.weight(1f))
+                        OutlinedTextField(
+                            value = cvv,
+                            onValueChange = { if (it.length <= 3) cvv = it },
+                            label = { Text(stringResource(id = R.string.cvv_label)) },
+                            placeholder = { Text(stringResource(id = R.string.cvv_placeholder)) },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             },
@@ -113,33 +125,36 @@ fun PaymentSettings() {
                         showDialog = false
                         cardNumber = ""; expiry = ""; cvv = ""
                     }
-                }) { Text("Guardar") }
+                }) { Text(stringResource(id = R.string.save_btn)) }
             },
-            dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.cancel_btn)) } }
         )
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Tus Tarjetas Guardadas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        
+        Text(stringResource(id = R.string.saved_cards_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
         profileFromDb?.paymentMethod?.let { method ->
             SettingItem(
                 title = method,
-                subtitle = "Método Predeterminado",
+                subtitle = stringResource(id = R.string.default_method),
                 icon = Icons.Default.CreditCard,
-                onDelete = { 
+                onDelete = {
                     profileFromDb?.let { profile ->
                         val updated = profile.copy(paymentMethod = null)
                         viewModel.saveProfile(updated)
                     }
                 }
             )
-        } ?: Text("No tienes tarjetas guardadas", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } ?: Text(stringResource(id = R.string.no_saved_cards), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Add, null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (profileFromDb?.paymentMethod == null) "Añadir Nuevo Método" else "Cambiar Tarjeta")
+            Text(
+                if (profileFromDb?.paymentMethod == null) stringResource(id = R.string.add_new_method)
+                else stringResource(id = R.string.change_card)
+            )
         }
     }
 }
@@ -148,27 +163,26 @@ fun PaymentSettings() {
 fun AddressSettings() {
     val context = LocalContext.current
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    
+
     val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
     val currentUser = auth?.currentUser
     val uid = currentUser?.uid ?: "dummy_uid_patient"
 
     var showDialog by remember { mutableStateOf(false) }
     var addressText by remember { mutableStateOf("") }
-    
-    // Observación reactiva
+
     val profileFromDb by viewModel.observeProfile(uid).collectAsState(initial = null)
 
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Dirección de Entrega") },
+            title = { Text(stringResource(id = R.string.delivery_address_dialog_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = addressText, 
-                        onValueChange = { addressText = it }, 
-                        label = { Text("Dirección completa") },
+                        value = addressText,
+                        onValueChange = { addressText = it },
+                        label = { Text(stringResource(id = R.string.complete_address_label)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -188,37 +202,40 @@ fun AddressSettings() {
                         showDialog = false
                         addressText = ""
                     }
-                }) { Text("Guardar") }
+                }) { Text(stringResource(id = R.string.save_btn)) }
             },
-            dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.cancel_btn)) } }
         )
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Direcciones de Entrega", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        
+        Text(stringResource(id = R.string.delivery_addresses_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
         profileFromDb?.address?.let { addr ->
             SettingItem(
-                title = "Principal",
+                title = stringResource(id = R.string.main_address_label),
                 subtitle = addr,
                 icon = Icons.Default.Home,
                 onEdit = {
                     addressText = addr
                     showDialog = true
                 },
-                onDelete = { 
+                onDelete = {
                     profileFromDb?.let { profile ->
                         val updated = profile.copy(address = null)
                         viewModel.saveProfile(updated)
                     }
                 }
             )
-        } ?: Text("No tienes direcciones guardadas", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } ?: Text(stringResource(id = R.string.no_saved_addresses), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Button(onClick = { addressText = ""; showDialog = true }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Add, null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(if (profileFromDb?.address == null) "Añadir Nueva Dirección" else "Cambiar Dirección")
+            Text(
+                if (profileFromDb?.address == null) stringResource(id = R.string.add_new_address)
+                else stringResource(id = R.string.change_address)
+            )
         }
     }
 }
@@ -227,19 +244,17 @@ fun AddressSettings() {
 fun AccountSettings() {
     val context = LocalContext.current
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    
+
     val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
     val currentUser = auth?.currentUser
     val uid = currentUser?.uid ?: "dummy_uid_patient"
-    
-    // Usamos collectAsState para que la UI reaccione a la base de datos REAL
+
     val profileFromDb by viewModel.observeProfile(uid).collectAsState(initial = null)
-    
+
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
 
-    // Actualizar campos de texto cuando cambie el perfil en la base de datos
     LaunchedEffect(profileFromDb) {
         profileFromDb?.let {
             name = it.name
@@ -249,32 +264,32 @@ fun AccountSettings() {
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Información Personal", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(id = R.string.personal_info_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         OutlinedTextField(
-            value = name, 
-            onValueChange = { name = it }, 
-            label = { Text("Nombre Completo") }, 
-            modifier = Modifier.fillMaxWidth(), 
+            value = name,
+            onValueChange = { name = it },
+            label = { Text(stringResource(id = R.string.full_name_label)) },
+            modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Person, null) }
         )
         OutlinedTextField(
-            value = phone, 
-            onValueChange = { phone = it }, 
-            label = { Text("Teléfono") }, 
-            modifier = Modifier.fillMaxWidth(), 
+            value = phone,
+            onValueChange = { phone = it },
+            label = { Text(stringResource(id = R.string.phone_label)) },
+            modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Phone, null) }
         )
         OutlinedTextField(
-            value = email, 
-            onValueChange = { email = it }, 
-            label = { Text("Correo Electrónico") }, 
-            modifier = Modifier.fillMaxWidth(), 
+            value = email,
+            onValueChange = { email = it },
+            label = { Text(stringResource(id = R.string.email_settings_label)) },
+            modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Email, null) }
         )
-        
+
         Spacer(modifier = Modifier.height(8.dp))
         Button(
-            onClick = { 
+            onClick = {
                 val updatedProfile = profileFromDb?.copy(
                     name = name,
                     email = email,
@@ -286,15 +301,15 @@ fun AccountSettings() {
                     phone = phone,
                     role = "PATIENT"
                 )
-                
+
                 android.util.Log.d("ProfileSettings", "Click en Guardar para UID: $uid")
                 viewModel.saveProfile(updatedProfile)
                 Toast.makeText(context, "Guardando cambios...", Toast.LENGTH_SHORT).show()
-            }, 
-            modifier = Modifier.fillMaxWidth(), 
+            },
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("GUARDAR CAMBIOS", fontWeight = FontWeight.Bold)
+            Text(stringResource(id = R.string.save_changes_btn), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -302,11 +317,11 @@ fun AccountSettings() {
 @Composable
 fun NotificationSettings() {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text("Preferencias de Notificación", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        NotificationToggle(title = "Notificaciones Push", initial = true)
-        NotificationToggle(title = "Promociones por Email", initial = false)
-        NotificationToggle(title = "Alertas de Pedido", initial = true)
-        NotificationToggle(title = "Seguridad de la Cuenta", initial = true)
+        Text(stringResource(id = R.string.notification_prefs_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        NotificationToggle(title = stringResource(id = R.string.push_notifications), initial = true)
+        NotificationToggle(title = stringResource(id = R.string.email_promotions), initial = false)
+        NotificationToggle(title = stringResource(id = R.string.order_alerts), initial = true)
+        NotificationToggle(title = stringResource(id = R.string.account_security), initial = true)
     }
 }
 

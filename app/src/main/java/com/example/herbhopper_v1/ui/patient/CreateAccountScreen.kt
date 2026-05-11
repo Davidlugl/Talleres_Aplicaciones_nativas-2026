@@ -1,14 +1,13 @@
 package com.example.herbhopper_v1.ui.patient
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +21,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
-import com.example.herbhopper_v1.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,15 +30,21 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
     if (showProfileModal) {
         AlertDialog(
             onDismissRequest = { showProfileModal = false },
-            title = { Text("Seleccionar Perfil de Registro", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(id = R.string.select_profile_register_title), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth()) { Text("Paciente") }
-                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)) { Text("Vendedor") }
-                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)) { Text("Administrador") }
+                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(id = R.string.role_patient))
+                    }
+                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)) {
+                        Text(stringResource(id = R.string.role_seller))
+                    }
+                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)) {
+                        Text(stringResource(id = R.string.role_admin))
+                    }
                 }
             },
-            confirmButton = { TextButton(onClick = { showProfileModal = false }) { Text("Cerrar") } }
+            confirmButton = { TextButton(onClick = { showProfileModal = false }) { Text(stringResource(id = R.string.close_btn)) } }
         )
     }
 
@@ -49,7 +53,6 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
             CenterAlignedTopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Placeholder for Logo
                         Box(
                             modifier = Modifier
                                 .size(32.dp)
@@ -65,11 +68,7 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.ShoppingCart, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                },
+                actions = {},
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)
                 ),
@@ -85,7 +84,7 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
                 .padding(24.dp)
         ) {
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             Text(
                 text = stringResource(id = R.string.create_account),
                 style = MaterialTheme.typography.displayMedium,
@@ -102,12 +101,11 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Form Fields
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
                 label = { Text(stringResource(id = R.string.full_name)) },
-                placeholder = { Text("John Doe") },
+                placeholder = { Text(stringResource(id = R.string.john_doe)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -122,7 +120,7 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
                 value = "",
                 onValueChange = {},
                 label = { Text(stringResource(id = R.string.email)) },
-                placeholder = { Text("john@example.com") },
+                placeholder = { Text(stringResource(id = R.string.john_example_email)) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -138,7 +136,7 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
                     value = "",
                     onValueChange = {},
                     label = { Text(stringResource(id = R.string.phone)) },
-                    placeholder = { Text("+1 (555) 000-0000") },
+                    placeholder = { Text(stringResource(id = R.string.dummy_phone)) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -152,7 +150,7 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
                     value = "",
                     onValueChange = {},
                     label = { Text(stringResource(id = R.string.password)) },
-                    placeholder = { Text("••••••••") },
+                    placeholder = { Text(stringResource(id = R.string.dummy_password)) },
                     modifier = Modifier.weight(1f),
                     visualTransformation = PasswordVisualTransformation(),
                     shape = RoundedCornerShape(12.dp),
@@ -169,9 +167,7 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
 
             Button(
                 onClick = onSignUpSuccess,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                 contentPadding = PaddingValues()
@@ -204,14 +200,11 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
 
             OutlinedButton(
                 onClick = onSignUpSuccess,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = ButtonDefaults.outlinedButtonBorder.copy(brush = Brush.linearGradient(listOf(MaterialTheme.colorScheme.outline.copy(0.2f), MaterialTheme.colorScheme.outline.copy(0.2f))))
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Google Logo Placeholder
                     Box(modifier = Modifier.size(24.dp).background(Color.Red, CircleShape))
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(stringResource(id = R.string.signup_google), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
@@ -219,7 +212,7 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             TextButton(
                 onClick = onLoginClick,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -237,16 +230,15 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
                 Text(
-                    text = "Cambiar Perfil de Registro",
+                    text = stringResource(id = R.string.change_register_profile),
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(64.dp))
-            
-            // Bottom banner-like card
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),

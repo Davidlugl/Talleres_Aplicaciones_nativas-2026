@@ -31,7 +31,7 @@ fun ProductCrudScreen(viewModel: ProductViewModel = viewModel()) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Gestión de Productos (CRUD)") })
+            TopAppBar(title = { Text(stringResource(id = R.string.product_crud_title)) })
         }
     ) { padding ->
         Column(
@@ -58,7 +58,7 @@ fun ProductCrudScreen(viewModel: ProductViewModel = viewModel()) {
             OutlinedTextField(
                 value = category,
                 onValueChange = { category = it },
-                label = { Text("Categoría (Aceite, Flor, Cápsulas, etc.)") },
+                label = { Text(stringResource(id = R.string.category_hint)) },
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -117,7 +117,7 @@ fun ProductCrudScreen(viewModel: ProductViewModel = viewModel()) {
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(product.name, style = MaterialTheme.typography.titleMedium)
-                                Text("${product.category} • $${product.price}", style = MaterialTheme.typography.bodyMedium)
+                                Text("${product.category} • $${String.format("%,.0f", product.price)} COP", style = MaterialTheme.typography.bodyMedium)
                             }
                             Row {
                                 IconButton(onClick = {

@@ -21,12 +21,12 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             // Seeding directly to ensure data exists
             val initialProducts = listOf(
-                Product(name = "Aceite Aura Blend 15%", description = "Aceite CBD de espectro completo 1500mg.", price = 64.50, category = "Aceite", imageUrl = "url_aceite"),
-                Product(name = "Silver Haze Premium", description = "Flor curada de grado medicinal.", price = 45.00, category = "Flor", imageUrl = "url_flor"),
-                Product(name = "Cápsulas Night Cap", description = "Cápsulas para el descanso nocturno.", price = 32.00, category = "Cápsulas", imageUrl = "url_capsulas"),
-                Product(name = "Crema Relief Pro", description = "Crema tópica antiinflamatoria.", price = 28.50, category = "Cremas", imageUrl = "url_crema"),
-                Product(name = "Extracto de Menta", description = "Extracto botánico digestivo.", price = 24.50, category = "Extractos", imageUrl = "url_extracto"),
-                Product(name = "Morning Mist Spray", description = "Spray sublingual energizante.", price = 35.00, category = "Extractos", imageUrl = "url_spray")
+                Product(name = "Aceite Aura Blend 15%", description = "Aceite CBD de espectro completo 1500mg.", price = 64500.0, category = "Aceite", imageUrl = "url_aceite"),
+                Product(name = "Flor Silver Haze Premium", description = "Flor curada de grado medicinal.", price = 45000.0, category = "Flor", imageUrl = "url_flor"),
+                Product(name = "Cápsulas Night Cap", description = "Cápsulas para el descanso nocturno.", price = 32000.0, category = "Cápsulas", imageUrl = "url_capsulas"),
+                Product(name = "Crema Relief Pro", description = "Crema tópica antiinflamatoria.", price = 28500.0, category = "Cremas", imageUrl = "url_crema"),
+                Product(name = "Extracto de Menta", description = "Extracto botánico digestivo.", price = 24500.0, category = "Extractos", imageUrl = "url_extracto"),
+                Product(name = "Spray Morning Mist", description = "Spray sublingual energizante.", price = 35000.0, category = "Extractos", imageUrl = "url_spray")
             )
             initialProducts.forEach { productDao.insertProduct(it) }
         }

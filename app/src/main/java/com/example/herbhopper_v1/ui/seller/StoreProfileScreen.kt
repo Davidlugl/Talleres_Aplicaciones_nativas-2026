@@ -12,10 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.components.HerbHopperIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,19 +29,19 @@ fun StoreProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Perfil de Tienda", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.store_profile_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
         },
-        bottomBar = { 
+        bottomBar = {
             SellerBottomNavBar(
                 currentRoute = "profile",
                 onNavigate = onNavigate
-            ) 
+            )
         }
     ) { padding ->
         Column(
@@ -61,26 +61,29 @@ fun StoreProfileScreen(
                 Icon(Icons.Default.Store, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Botanical Precision", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("Vendedor Verificado", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-            
+            Text(stringResource(id = R.string.store_name), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(stringResource(id = R.string.verified_seller), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+
             Spacer(modifier = Modifier.height(32.dp))
-            
-            ProfileSettingItem(icon = Icons.Default.Edit, title = "Editar Información", onClick = { onOptionClick("Configuración") })
-            ProfileSettingItem(icon = Icons.Default.LocationOn, title = "Ubicación de Tienda", onClick = { onOptionClick("Direcciones") })
-            ProfileSettingItem(icon = Icons.Default.Notifications, title = "Notificaciones", onClick = { onOptionClick("Notificaciones") })
-            ProfileSettingItem(icon = Icons.Default.Payment, title = "Cuenta de Cobro", onClick = { onOptionClick("Métodos de Pago") })
-            ProfileSettingItem(icon = Icons.Default.Security, title = "Seguridad")
-            
+
+            val settingsText = stringResource(id = R.string.settings)
+            val notificationsText = stringResource(id = R.string.notifications)
+
+            ProfileSettingItem(icon = Icons.Default.Edit, title = stringResource(id = R.string.edit_info), onClick = { onOptionClick(settingsText) })
+            ProfileSettingItem(icon = Icons.Default.LocationOn, title = stringResource(id = R.string.store_location), onClick = { onOptionClick("Direcciones") })
+            ProfileSettingItem(icon = Icons.Default.Notifications, title = stringResource(id = R.string.notifications), onClick = { onOptionClick(notificationsText) })
+            ProfileSettingItem(icon = Icons.Default.Payment, title = stringResource(id = R.string.payment_account), onClick = { onOptionClick("Métodos de Pago") })
+            ProfileSettingItem(icon = Icons.Default.Security, title = stringResource(id = R.string.security))
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             Button(
                 onClick = onLogout,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Cerrar Sesión", fontWeight = FontWeight.Bold)
+                Text(stringResource(id = R.string.close_session), fontWeight = FontWeight.Bold)
             }
         }
     }

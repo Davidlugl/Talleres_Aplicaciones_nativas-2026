@@ -38,7 +38,7 @@ fun AdminBottomNavBar(currentRoute: String, onNavigate: (String) -> Unit = {}) {
             selected = currentRoute == "users",
             onClick = { onNavigate("user_management") },
             icon = { Icon(Icons.Default.People, null) },
-            label = { Text("Usuarios") }
+            label = { Text(stringResource(id = R.string.users_label)) }
         )
         NavigationBarItem(
             selected = currentRoute == "system",

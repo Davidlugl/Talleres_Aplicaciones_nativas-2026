@@ -15,7 +15,6 @@ import com.example.herbhopper_v1.data.Product
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,15 +34,15 @@ fun InventoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Inventario", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.inventory), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onAddProduct) {
-                        Icon(Icons.Default.Add, contentDescription = "Add")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(id = R.string.add_btn))
                     }
                 }
             )
@@ -98,7 +97,7 @@ fun InventoryCard(item: Product, onEdit: (Int) -> Unit, onDelete: () -> Unit) {
                 Text(item.category, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("$${item.price}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                Text("$${String.format("%,.0f", item.price)} COP", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             }
             Spacer(modifier = Modifier.width(8.dp))
             Row {

@@ -2,9 +2,9 @@ package com.example.herbhopper_v1.ui.patient
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -13,10 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.herbhopper_v1.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,10 +33,10 @@ fun CheckoutScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Pasarela de Pago", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(id = R.string.payment_gateway_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
                     }
                 }
             )
@@ -48,39 +50,38 @@ fun CheckoutScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Resumen de Orden
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Resumen de Pago", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.payment_summary_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Total a pagar")
-                        Text("$${String.format("%.2f", totalAmount)}", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, fontSize = 20.sp)
+                        Text(stringResource(id = R.string.total_to_pay))
+                        Text("$${String.format("%,.0f", totalAmount)} COP", fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary, fontSize = 20.sp)
                     }
                 }
             }
 
-            Text("Seleccione Método de Pago", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(id = R.string.select_payment_method), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
             PaymentMethodItem(
-                title = "Tarjeta de Crédito / Débito",
+                title = stringResource(id = R.string.credit_card_method),
                 icon = Icons.Default.CreditCard,
                 isSelected = selectedMethod == "CREDIT_CARD",
                 onClick = { selectedMethod = "CREDIT_CARD" }
             )
 
             PaymentMethodItem(
-                title = "Transferencia Bancaria (PSE)",
+                title = stringResource(id = R.string.bank_transfer_method),
                 icon = Icons.Default.AccountBalance,
                 isSelected = selectedMethod == "BANK",
                 onClick = { selectedMethod = "BANK" }
             )
 
             PaymentMethodItem(
-                title = "Efectivo (Puntos de pago)",
+                title = stringResource(id = R.string.cash_method),
                 icon = Icons.Default.Payments,
                 isSelected = selectedMethod == "CASH",
                 onClick = { selectedMethod = "CASH" }
@@ -97,7 +98,6 @@ fun CheckoutScreen(
             Button(
                 onClick = {
                     isLoading = true
-                    // Simulación de procesamiento
                     onPaymentSuccess()
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -107,7 +107,7 @@ fun CheckoutScreen(
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("PAGAR AHORA", fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.pay_now), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -117,7 +117,7 @@ fun CheckoutScreen(
 @Composable
 fun PaymentMethodItem(
     title: String,
-    icon: ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -143,29 +143,36 @@ fun PaymentMethodItem(
 
 @Composable
 fun CreditCardForm() {
+    val cardNumberLabel = stringResource(id = R.string.card_number_label)
+    val cardNumberPlaceholder = stringResource(id = R.string.card_number_placeholder)
+    val expiryLabel = stringResource(id = R.string.expiry_label)
+    val expiryPlaceholder = stringResource(id = R.string.expiry_placeholder)
+    val cvvLabel = stringResource(id = R.string.cvv_label)
+    val cvvPlaceholder = stringResource(id = R.string.cvv_placeholder)
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = "",
             onValueChange = {},
-            label = { Text("Número de Tarjeta") },
+            label = { Text(cardNumberLabel) },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("0000 0000 0000 0000") },
+            placeholder = { Text(cardNumberPlaceholder) },
             leadingIcon = { Icon(Icons.Default.CreditCard, null) }
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
-                label = { Text("Vencimiento") },
+                label = { Text(expiryLabel) },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("MM/AA") }
+                placeholder = { Text(expiryPlaceholder) }
             )
             OutlinedTextField(
                 value = "",
                 onValueChange = {},
-                label = { Text("CVV") },
+                label = { Text(cvvLabel) },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("123") }
+                placeholder = { Text(cvvPlaceholder) }
             )
         }
     }

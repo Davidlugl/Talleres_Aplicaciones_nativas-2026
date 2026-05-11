@@ -49,9 +49,7 @@ fun CartScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
                 },
-                actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.ShoppingCart, null, tint = MaterialTheme.colorScheme.primary) }
-                },
+                actions = {},
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
             )
         }
@@ -72,7 +70,7 @@ fun CartScreen(
             if (items.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                        Text("Tu carrito está vacío", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(id = R.string.empty_cart), style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             } else {
@@ -95,7 +93,7 @@ fun CartScreen(
                         Column(modifier = Modifier.padding(24.dp)) {
                             Text(stringResource(id = R.string.summary), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(16.dp))
-                            SummaryRow(stringResource(id = R.string.subtotal), "$${String.format(Locale.US, "%.2f", viewModel.total)}")
+                            SummaryRow(stringResource(id = R.string.subtotal), "$${String.format("%,.0f", viewModel.total)} COP")
                             SummaryRow(stringResource(id = R.string.clinical_shipping), stringResource(id = R.string.free), color = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.height(16.dp))
                             HorizontalDivider(
@@ -106,7 +104,7 @@ fun CartScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                                 Text(stringResource(id = R.string.total), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                                Text("$${String.format(Locale.US, "%.2f", viewModel.total)}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+                                Text("$${String.format("%,.0f", viewModel.total)} COP", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                             }
                         }
                     }
@@ -154,9 +152,9 @@ fun CartItem(
             Box(modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("BOTÁNICO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
+                Text(stringResource(id = R.string.botanico), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
                 Text(item.product.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text("$${item.product.price}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("$${String.format("%,.0f", item.product.price)} COP", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
             Row(
                 modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).padding(horizontal = 4.dp),

@@ -27,7 +27,8 @@ fun OrderHistoryScreen(
     onHomeClick: () -> Unit,
     onOrdersClick: () -> Unit,
     onScriptsClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onCartClick: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -40,7 +41,7 @@ fun OrderHistoryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) { Icon(Icons.Default.ShoppingCart, null, tint = MaterialTheme.colorScheme.primary) }
+                    IconButton(onClick = onCartClick) { Icon(Icons.Default.ShoppingCart, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
             )
@@ -101,13 +102,13 @@ fun OrderCard(status: String) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("#BP-88291", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
+                            Text(stringResource(id = R.string.dummy_order_id), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Box(modifier = Modifier.size(4.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("12 Oct 2023", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(id = R.string.dummy_order_date), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Text("Extracto de Salvia", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(stringResource(id = R.string.dummy_order_product), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Text(stringResource(id = R.string.items_count, 2, "Farmacia Central"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -136,7 +137,7 @@ fun OrderCard(status: String) {
                         Text(status.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black, color = if (status == stringResource(id = R.string.delivered)) MaterialTheme.colorScheme.onTertiaryContainer else if (status == stringResource(id = R.string.status_in_progress)) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-                Text("$42.50", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(id = R.string.dummy_order_price), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
             }
         }
     }

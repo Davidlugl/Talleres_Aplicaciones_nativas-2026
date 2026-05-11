@@ -134,7 +134,7 @@ fun CatalogScreen(
                                     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape) {
                                         Text(stringResource(id = R.string.staff_pick), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
                                     }
-                                    Text("Aura Blend Special", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                                    Text(stringResource(id = R.string.aura_blend_special), color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
                                 }
                             }
                         }
@@ -158,7 +158,7 @@ fun CatalogScreen(
             if (filteredProducts.isEmpty()) {
                 item {
                     Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                        Text("No hay productos disponibles.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(id = R.string.no_products_available), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             } else {
@@ -230,7 +230,7 @@ fun ProductCard(
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(product.name, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1)
-            Text("$${product.price}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            Text("$${String.format("%,.0f", product.price)} COP", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(8.dp))
             IconButton(
                 onClick = onAddClick,
