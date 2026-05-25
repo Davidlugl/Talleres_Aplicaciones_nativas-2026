@@ -24,6 +24,19 @@ import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.data.Product
 import com.example.herbhopper_v1.ui.theme.*
 
+/**
+ * Pantalla de Detalle de Producto para el paciente.
+ * Renderiza la información extendida de una formulación o artículo seleccionado.
+ * Muestra la imagen principal, sello de calidad premium, concentración química (CBD/THC),
+ * descripción de componentes, beneficios destacados (relajación, antiinflamatorio), precio por volumen,
+ * modo de uso y certificaciones de laboratorio. Permite agregar directamente al carrito de compras.
+ *
+ * @param product El objeto [Product] del cual se muestran los detalles.
+ * @param onBack Función callback para regresar a la pantalla anterior.
+ * @param onAddToCart Función callback para agregar este producto al carrito.
+ * @param cartItemCount Conteo actual de artículos en el carrito para mostrar en la insignia superior.
+ * @param onCartClick Función callback para navegar al carrito de compras.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailsScreen(
@@ -70,6 +83,15 @@ fun ProductDetailsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val imageResId = remember(product.imageUrl) {
+                if (!product.imageUrl.isNullOrEmpty()) {
+                    context.resources.getIdentifier(product.imageUrl, "drawable", context.packageName)
+                } else {
+                    0
+                }
+            }
+
             // Main Image
             Box(
                 modifier = Modifier
@@ -79,6 +101,14 @@ fun ProductDetailsScreen(
                     .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
+                if (imageResId != 0) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = imageResId),
+                        contentDescription = product.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                }
                 Column(modifier = Modifier.padding(16.dp)) {
                     Surface(color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp)) {
                         Text(stringResource(id = R.string.premium_grade), modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
@@ -159,6 +189,15 @@ fun ProductDetailsScreen(
     }
 }
 
+/**
+ * Tarjeta de especificación técnica del producto.
+ * Muestra el nombre del parámetro (ej. THC Content) y su valor destacado (ej. <0.2% THC).
+ *
+ * @param label Nombre del parámetro.
+ * @param value Valor correspondiente.
+ * @param modifier Modificador de Compose para adaptar dimensiones.
+ * @param isHighlighted Indica si la tarjeta debe tener un borde destacado.
+ */
 @Composable
 fun SpecCard(label: String, value: String, modifier: Modifier = Modifier, isHighlighted: Boolean = false) {
     Card(
@@ -174,6 +213,13 @@ fun SpecCard(label: String, value: String, modifier: Modifier = Modifier, isHigh
     }
 }
 
+/**
+ * Chip para representar los beneficios terapéuticos del producto.
+ * Muestra un icono pequeño y el nombre del beneficio.
+ *
+ * @param icon Icono representativo del beneficio.
+ * @param label Nombre del beneficio.
+ */
 @Composable
 fun BenefitChip(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
     Surface(
@@ -188,6 +234,14 @@ fun BenefitChip(icon: androidx.compose.ui.graphics.vector.ImageVector, label: St
     }
 }
 
+/**
+ * Fila informativa estructurada para modo de uso y certificaciones.
+ * Consiste en un icono rodeado de un círculo primario y columnas de texto descriptivo a su derecha.
+ *
+ * @param icon Icono representativo del tema de información.
+ * @param title Título representativo de la sección.
+ * @param description Texto descriptivo extendido.
+ */
 @Composable
 fun InfoRow(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, description: String) {
     Row(verticalAlignment = Alignment.Top) {

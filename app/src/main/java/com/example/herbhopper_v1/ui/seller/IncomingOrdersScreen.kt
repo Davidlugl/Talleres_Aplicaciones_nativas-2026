@@ -4,8 +4,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,6 +27,16 @@ import com.example.herbhopper_v1.viewmodel.OrderViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Pantalla de Pedidos Entrantes para el Vendedor (Seller).
+ * Carga en tiempo real utilizando [OrderViewModel] todas las órdenes registradas en el sistema.
+ * Permite al vendedor aceptar las órdenes pendientes ("PENDING") y redirigir al panel de
+ * detalles específicos de cada despacho.
+ *
+ * @param onBack Función callback para retornar al panel anterior.
+ * @param onNavigate Función callback para navegar a diferentes rutas del vendedor.
+ * @param viewModel Instancia de [OrderViewModel] para gestionar e interactuar con los pedidos.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IncomingOrdersScreen(
@@ -50,25 +64,77 @@ fun IncomingOrdersScreen(
             )
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
-            items(orders) { order ->
-                OrderCard(
-                    order = order,
-                    onAccept = { viewModel.updateOrderStatus(order.orderId, "ACCEPTED") },
-                    onDetails = { onNavigate("order_details/${order.orderId}") }
-                )
+        if (orders.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(24.dp)
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        shape = CircleShape,
+                        modifier = Modifier.size(80.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Inbox,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "No hay pedidos pendientes",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Cuando un cliente realice una compra en la tienda, aparecerá aquí en tiempo real.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(vertical = 16.dp)
+            ) {
+                items(orders) { order ->
+                    OrderCard(
+                        order = order,
+                        onAccept = { viewModel.updateOrderStatus(order.orderId, "ACCEPTED") },
+                        onDetails = { onNavigate("order_details/${order.orderId}") }
+                    )
+                }
             }
         }
     }
 }
 
+/**
+ * Tarjeta individual de pedido para el listado del vendedor.
+ * Muestra el número de pedido truncado, nombre del cliente, total formateado en COP,
+ * fecha/hora del pedido y botones contextuales para aceptar o ver detalles de la orden.
+ *
+ * @param order El objeto de datos [Order] a presentar.
+ * @param onAccept Callback ejecutado al presionar "Aceptar" la orden.
+ * @param onDetails Callback ejecutado al presionar "Detalles".
+ */
 @Composable
 fun OrderCard(
     order: Order,
@@ -114,6 +180,12 @@ fun OrderCard(
     }
 }
 
+/**
+ * Chip indicador de estado del pedido específico para la vista de pedidos entrantes.
+ * Colorea con un alpha del 10% el fondo basándose en los recursos de color de estado.
+ *
+ * @param status Nombre del estado (PENDING, ACCEPTED, CANCELLED, DELIVERED).
+ */
 @Composable
 fun IncomingOrderStatusChip(status: String) {
     val color = when (status.uppercase()) {

@@ -20,6 +20,14 @@ import com.example.herbhopper_v1.data.UserProfile
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 
+/**
+ * Pantalla de Control de Cuentas de Usuario (User Management Screen).
+ * Muestra el listado completo de perfiles de usuario registrados en la base de datos local.
+ * Proporciona un botón flotante de acción (FAB) para abrir un diálogo interactivo de creación
+ * de nuevo usuario, ordenación por orden alfabético o roles, y listado reactivo para editar o eliminar.
+ *
+ * @param onBack Función callback para retornar a la pantalla anterior.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserManagementScreen(onBack: () -> Unit) {
@@ -120,6 +128,15 @@ fun UserManagementScreen(onBack: () -> Unit) {
     }
 }
 
+/**
+ * Fila representativa de un usuario registrado en el sistema.
+ * Colorea de forma dinámica el avatar inicial basándose en el rol del usuario (ADMIN, SELLER, PATIENT)
+ * y provee botones de control rápido para editar y eliminar.
+ *
+ * @param user El objeto [UserProfile] a representar.
+ * @param onEdit Función callback para procesar la edición del perfil de usuario.
+ * @param onDelete Función callback para procesar la eliminación definitiva del usuario de la lista.
+ */
 @Composable
 fun UserItem(
     user: UserProfile,

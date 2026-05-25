@@ -21,6 +21,13 @@ import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import kotlinx.coroutines.delay
 
+/**
+ * Pantalla de carga (Splash Screen) inicial de la aplicación.
+ * Muestra el logotipo de la aplicación con una animación de escala y un indicador de progreso,
+ * y navega a la siguiente pantalla después de un retraso de 2.5 segundos.
+ *
+ * @param onTimeout Función de retorno (callback) que se ejecuta cuando el temporizador finaliza, permitiendo la transición a la siguiente pantalla.
+ */
 @Composable
 fun SplashScreen(onTimeout: () -> Unit) {
     var startAnimation by remember { mutableStateOf(false) }

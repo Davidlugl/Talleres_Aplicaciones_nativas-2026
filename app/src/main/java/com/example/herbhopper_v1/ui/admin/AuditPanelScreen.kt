@@ -19,9 +19,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
+import com.example.herbhopper_v1.model.AuditLog
 import com.example.herbhopper_v1.ui.components.AdminBottomNavBar
 import com.example.herbhopper_v1.ui.components.HerbHopperIcons
 
+/**
+ * Pantalla del Panel de Auditoría del Administrador (Audit Panel Screen).
+ * Muestra el registro histórico de actividades del sistema en tiempo real.
+ * Permite filtrar de forma visual acciones normales de mantenimiento técnico (actualización de stock, autorizaciones)
+ * frente a alertas críticas o intentos de acceso denegados de seguridad.
+ *
+ * @param onNavigate Función callback para navegar a diferentes secciones del panel de administración.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuditPanelScreen(onNavigate: (String) -> Unit = {}) {
@@ -55,8 +64,12 @@ fun AuditPanelScreen(onNavigate: (String) -> Unit = {}) {
     }
 }
 
-data class AuditLog(val title: String, val description: String, val time: String, val isWarning: Boolean)
-
+/**
+ * Tarjeta individual representativa de un registro de auditoría (log).
+ * Configura dinámicamente un fondo rojizo y un icono de advertencia si se marca el log como crítico (warning).
+ *
+ * @param log El objeto [AuditLog] a renderizar.
+ */
 @Composable
 fun AuditCard(log: AuditLog) {
     Card(

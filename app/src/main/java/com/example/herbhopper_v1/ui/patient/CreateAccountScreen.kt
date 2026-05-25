@@ -13,6 +13,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -22,10 +25,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 
+/**
+ * Pantalla para la Creación de Cuentas (Registro de nuevos pacientes).
+ * Permite al usuario registrar sus datos personales como nombre completo, correo electrónico,
+ * teléfono y contraseña. Incluye un modal (AlertDialog) para la selección rápida de perfiles de registro
+ * (Paciente, Vendedor, Administrador), registro alternativo mediante Google y una sección de garantía
+ * de pureza clínica.
+ *
+ * @param onSignUpSuccess Función callback ejecutada cuando el registro es exitoso.
+ * @param onLoginClick Función callback para navegar a la pantalla de inicio de sesión.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
+fun CreateAccountScreen(
+    onSignUpSuccess: () -> Unit,
+    onLoginClick: () -> Unit,
+    profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
+    val context = LocalContext.current
     var showProfileModal by remember { mutableStateOf(false) }
+
+    // Solución al Issue 1: Declarar variables de estado local para los campos del formulario
+    var fullName by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     if (showProfileModal) {
         AlertDialog(
@@ -101,9 +125,10 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
 
             Spacer(modifier = Modifier.height(48.dp))
 
+            // Solución al Issue 1: Vincular los campos de texto a variables de estado mutable
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
+                value = fullName,
+                onValueChange = { fullName = it },
                 label = { Text(stringResource(id = R.string.full_name)) },
                 placeholder = { Text(stringResource(id = R.string.john_doe)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -117,8 +142,8 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(24.dp))
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
+                value = email,
+                onValueChange = { email = it },
                 label = { Text(stringResource(id = R.string.email)) },
                 placeholder = { Text(stringResource(id = R.string.john_example_email)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -133,10 +158,11 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
-                    value = "",
-                    onValueChange = {},
+                    value = phone,
+                    onValueChange = { input -> phone = input.filter { it.isDigit() }.take(10) },
                     label = { Text(stringResource(id = R.string.phone)) },
-                    placeholder = { Text(stringResource(id = R.string.dummy_phone)) },
+                    placeholder = { Text(stringResource(id = R.string.phone_placeholder)) },
+                    prefix = { Text(stringResource(id = R.string.colombia_prefix)) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -147,8 +173,8 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
                     )
                 )
                 OutlinedTextField(
-                    value = "",
-                    onValueChange = {},
+                    value = password,
+                    onValueChange = { password = it },
                     label = { Text(stringResource(id = R.string.password)) },
                     placeholder = { Text(stringResource(id = R.string.dummy_password)) },
                     modifier = Modifier.weight(1f),
@@ -166,7 +192,61 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
             Spacer(modifier = Modifier.height(40.dp))
 
             Button(
-                onClick = onSignUpSuccess,
+                onClick = {
+                    val trimmedEmail = email.trim()
+                    val lowercaseEmail = trimmedEmail.lowercase()
+                    val allowedKeywords = listOf("gmail", "outlook", "hotmail", "yahoo", "icloud", "live", "herbhopper")
+                    val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
+                    val cleanPhone = phone.filter { it.isDigit() }.take(10)
+
+                    if (fullName.isBlank() || email.isBlank()) {
+                        Toast.makeText(context, context.getString(R.string.toast_fill_name_email), Toast.LENGTH_SHORT).show()
+                    } else if (cleanPhone.length != 10) {
+                        Toast.makeText(context, context.getString(R.string.toast_invalid_phone), Toast.LENGTH_LONG).show()
+                    } else if (!trimmedEmail.matches(emailRegex) || !allowedKeywords.any { lowercaseEmail.contains(it) }) {
+                        Toast.makeText(context, context.getString(R.string.toast_invalid_email), Toast.LENGTH_LONG).show()
+                    } else {
+                        val prefixVal = context.getString(R.string.colombia_prefix)
+                        val formattedPhone = "$prefixVal$cleanPhone"
+                        val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
+                        if (auth != null && password.isNotBlank()) {
+                            auth.createUserWithEmailAndPassword(email, password)
+                                .addOnCompleteListener { task ->
+                                    val uid = auth.currentUser?.uid ?: "dummy_uid_patient"
+                                    val newProfile = com.example.herbhopper_v1.data.UserProfile(
+                                        uid = uid,
+                                        name = fullName,
+                                        email = email,
+                                        phone = formattedPhone,
+                                        role = "PATIENT"
+                                    )
+                                    profileViewModel.saveProfile(newProfile)
+                                    onSignUpSuccess()
+                                }
+                                .addOnFailureListener {
+                                    val newProfile = com.example.herbhopper_v1.data.UserProfile(
+                                        uid = "dummy_uid_patient",
+                                        name = fullName,
+                                        email = email,
+                                        phone = formattedPhone,
+                                        role = "PATIENT"
+                                    )
+                                    profileViewModel.saveProfile(newProfile)
+                                    onSignUpSuccess()
+                                }
+                        } else {
+                            val newProfile = com.example.herbhopper_v1.data.UserProfile(
+                                uid = "dummy_uid_patient",
+                                name = fullName,
+                                email = email,
+                                phone = formattedPhone,
+                                role = "PATIENT"
+                            )
+                            profileViewModel.saveProfile(newProfile)
+                            onSignUpSuccess()
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
@@ -199,7 +279,16 @@ fun CreateAccountScreen(onSignUpSuccess: () -> Unit, onLoginClick: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedButton(
-                onClick = onSignUpSuccess,
+                onClick = {
+                    val profile = com.example.herbhopper_v1.data.UserProfile(
+                        uid = "dummy_uid_patient",
+                        name = "David G.",
+                        email = "david.g@gmail.com",
+                        role = "PATIENT"
+                    )
+                    profileViewModel.saveProfile(profile)
+                    onSignUpSuccess()
+                },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 border = ButtonDefaults.outlinedButtonBorder.copy(brush = Brush.linearGradient(listOf(MaterialTheme.colorScheme.outline.copy(0.2f), MaterialTheme.colorScheme.outline.copy(0.2f))))

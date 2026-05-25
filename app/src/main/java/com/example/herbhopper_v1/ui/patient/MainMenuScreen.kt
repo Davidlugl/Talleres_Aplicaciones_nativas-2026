@@ -1,5 +1,6 @@
 package com.example.herbhopper_v1.ui.patient
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,6 +27,19 @@ import com.example.herbhopper_v1.ui.theme.*
 import com.example.herbhopper_v1.ui.components.HerbHopperIcons
 import com.example.herbhopper_v1.ui.components.PatientBottomNavBar
 
+/**
+ * Pantalla del Menú Principal del paciente.
+ * Organiza las principales secciones del aplicativo en una cuadrícula tipo "Bento Grid".
+ * Proporciona accesos directos al Catálogo, Órdenes, Validación de Recetas, Ajustes de Perfil,
+ * Centro de Ayuda y Cierre de Sesión, complementándose con la barra de navegación inferior del paciente.
+ *
+ * @param onLogout Función callback para cerrar la sesión y regresar a la pantalla de login.
+ * @param onCatalogClick Función callback para navegar al catálogo de productos.
+ * @param onOrdersClick Función callback para navegar al historial de órdenes.
+ * @param onPrescriptionClick Función callback para navegar a la validación de recetas médicas.
+ * @param onProfileClick Función callback para navegar a la configuración del perfil del usuario.
+ * @param onHelpClick Función callback para abrir el centro de ayuda y soporte.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainMenuScreen(
@@ -40,9 +55,11 @@ fun MainMenuScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(32.dp).background(Color.Transparent, CircleShape)) {
-                            // Logo here
-                        }
+                        Image(
+                            painter = painterResource(id = R.drawable.app_logo),
+                            contentDescription = "Herb Hopper Logo",
+                            modifier = Modifier.size(32.dp)
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = stringResource(id = R.string.app_name),
@@ -161,6 +178,15 @@ fun MainMenuScreen(
     }
 }
 
+/**
+ * Tarjeta de menú de gran tamaño para destacar la opción principal del catálogo.
+ * Ocupa todo el ancho disponible y muestra un diseño destacado con un botón de acción.
+ *
+ * @param title Título principal de la opción.
+ * @param subtitle Subtítulo descriptivo.
+ * @param icon Icono ilustrativo de tipo [ImageVector].
+ * @param onClick Acción a ejecutar cuando el usuario pulsa sobre la tarjeta.
+ */
 @Composable
 fun LargeMenuCard(title: String, subtitle: String, icon: ImageVector, onClick: () -> Unit) {
     Card(
@@ -201,6 +227,18 @@ fun LargeMenuCard(title: String, subtitle: String, icon: ImageVector, onClick: (
     }
 }
 
+/**
+ * Tarjeta de menú de tamaño compacto, utilizada para formar columnas pareadas.
+ * Admite personalización opcional de los colores del contenedor y el texto.
+ *
+ * @param title Título representativo de la opción.
+ * @param subtitle Subtítulo de la categoría o estado.
+ * @param icon Icono correspondiente de tipo [ImageVector].
+ * @param modifier Modificador para adaptar el diseño de Compose.
+ * @param containerColor Color de fondo de la tarjeta.
+ * @param contentColor Color de texto del contenido.
+ * @param onClick Acción a ejecutar al hacer clic en el componente.
+ */
 @Composable
 fun SmallMenuCard(
     title: String,
@@ -236,6 +274,16 @@ fun SmallMenuCard(
     }
 }
 
+/**
+ * Tarjeta de menú de utilidad secundaria.
+ * Presenta un diseño en fila (horizontal) con bordes delgados y un icono circular secundario.
+ *
+ * @param title Título principal de la opción.
+ * @param subtitle Subtítulo descriptivo corto.
+ * @param icon Icono representativo de tipo [ImageVector].
+ * @param modifier Modificador de Compose.
+ * @param onClick Acción a ejecutar al hacer clic en la tarjeta.
+ */
 @Composable
 fun UtilityMenuCard(title: String, subtitle: String, icon: ImageVector, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Card(

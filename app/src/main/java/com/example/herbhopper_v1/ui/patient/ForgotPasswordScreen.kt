@@ -18,6 +18,13 @@ import androidx.compose.ui.unit.dp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.theme.*
 
+/**
+ * Pantalla para recuperar la contraseña del paciente (Olvidó su contraseña).
+ * Proporciona un campo para introducir el correo electrónico y enviar un enlace de restablecimiento.
+ * Al enviarlo, cambia el estado para mostrar un mensaje de éxito con opción de reintentar.
+ *
+ * @param onBack Función de retorno (callback) que se ejecuta al presionar el botón de regresar para volver a la pantalla de inicio de sesión.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForgotPasswordScreen(onBack: () -> Unit) {

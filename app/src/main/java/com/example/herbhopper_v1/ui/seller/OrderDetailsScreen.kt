@@ -26,6 +26,17 @@ import com.google.gson.reflect.TypeToken
 import java.text.SimpleDateFormat
 import java.util.*
 
+/**
+ * Pantalla de Detalles de Pedido para el Vendedor (Order Details Screen).
+ * Muestra información exhaustiva de un pedido consultado por su identificador [orderId],
+ * incluyendo los productos comprados desglosados (nombre, precio individual y cantidad),
+ * la dirección de entrega del cliente, el costo total en COP y controles interactivos
+ * para cambiar el estado del despacho (Aceptar, Cancelar o marcar como Entregado).
+ *
+ * @param orderId Identificador único del pedido a consultar.
+ * @param onBack Función callback para retornar a la pantalla anterior.
+ * @param viewModel Instancia de [OrderViewModel] para consultar y actualizar el pedido.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderDetailsScreen(
@@ -164,6 +175,12 @@ fun OrderDetailsScreen(
     }
 }
 
+/**
+ * Chip indicador de estado del pedido específico para la pantalla de detalles del vendedor.
+ * Permite visualizar el estado en un formato de etiqueta de color según la categoría clínica del despacho.
+ *
+ * @param status Nombre del estado (PENDIENTE, ACEPTADO, CANCELADO, ENTREGADO, etc.).
+ */
 @Composable
 fun DetailsOrderStatusChip(status: String) {
     val color = when (status.uppercase()) {

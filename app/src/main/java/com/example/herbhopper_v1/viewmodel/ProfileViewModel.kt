@@ -95,4 +95,8 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     suspend fun getProfile(uid: String): UserProfile? {
         return userDao.getUserProfile(uid)
     }
+
+    suspend fun getProfileByEmail(email: String): UserProfile? {
+        return userDao.getUserProfileByEmail(email)
+    }
 }

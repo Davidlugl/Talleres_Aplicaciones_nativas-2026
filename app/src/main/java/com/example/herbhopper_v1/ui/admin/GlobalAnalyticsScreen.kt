@@ -20,6 +20,14 @@ import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.components.AdminBottomNavBar
 
+/**
+ * Pantalla de Analíticas Globales del Administrador (Global Analytics Screen).
+ * Agrupa y visualiza métricas de alto nivel del sistema, tales como ventas totales facturadas,
+ * usuarios activos registrados, volumen de transacciones financieras y un desglose interactivo
+ * del rendimiento operativo y comercial por regiones geográficas principales en Colombia.
+ *
+ * @param onNavigate Función callback para navegar a diferentes paneles del administrador.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GlobalAnalyticsScreen(onNavigate: (String) -> Unit = {}) {
@@ -59,6 +67,14 @@ fun GlobalAnalyticsScreen(onNavigate: (String) -> Unit = {}) {
     }
 }
 
+/**
+ * Tarjeta individual para presentar una estadística analítica.
+ * Colorea el texto de cambio porcentual en verde si es positivo (+) y en rojo si es negativo (-).
+ *
+ * @param label Título de la métrica (ej. "Ventas Totales").
+ * @param value Valor actual formateado en texto (ej. "$124,500.00").
+ * @param change Cadena que representa el cambio porcentual de crecimiento o decrecimiento.
+ */
 @Composable
 fun AnalyticsStat(label: String, value: String, change: String) {
     Card(
@@ -80,6 +96,13 @@ fun AnalyticsStat(label: String, value: String, change: String) {
     }
 }
 
+/**
+ * Fila analítica de barra de progreso lineal por región comercial.
+ *
+ * @param name Nombre de la ciudad o región geográfica.
+ * @param progress Fracción float de 0.0 a 1.0 que indica la cuota o desempeño.
+ * @param color Color de la barra de progreso lineal.
+ */
 @Composable
 fun RegionRow(name: String, progress: Float, color: Color) {
     Column {

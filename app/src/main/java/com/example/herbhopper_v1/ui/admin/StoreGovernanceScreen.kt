@@ -26,6 +26,17 @@ import com.example.herbhopper_v1.ui.theme.*
 import com.example.herbhopper_v1.ui.components.HerbHopperIcons
 import com.example.herbhopper_v1.ui.components.AdminBottomNavBar
 
+/**
+ * Pantalla de Gobernanza e Inspección de Tiendas (Store Governance Screen).
+ * Facilita a los administradores la gestión de comercios autorizados, permitiéndoles
+ * autorizar nuevas tiendas asignando números de licencia aleatorios, consultar estadísticas
+ * agregadas (verificados, pendientes) en tarjetas visuales, y alterar los privilegios
+ * de cada dispensario clínico (Verificar, Suspender, Restaurar) de forma reactiva mediante [AdminViewModel].
+ *
+ * @param onNavigate Función callback para navegar a diferentes sub-secciones del panel de administración.
+ * @param onLogout Función callback para realizar el cierre de sesión seguro del administrador.
+ * @param viewModel Instancia de [AdminViewModel] para persistir y actualizar el estado de los comercios.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreGovernanceScreen(
@@ -138,6 +149,14 @@ fun StoreGovernanceScreen(
     }
 }
 
+/**
+ * Tarjeta de estadística pequeña para visualización rápida de conteos.
+ *
+ * @param label Nombre identificador del contador.
+ * @param value Valor actual en texto.
+ * @param modifier Modificador visual Compose de alineación.
+ * @param contentColor Color representativo para el valor estadístico.
+ */
 @Composable
 fun SmallStatCard(label: String, value: String, modifier: Modifier = Modifier, contentColor: Color = MaterialTheme.colorScheme.primary) {
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), shape = RoundedCornerShape(16.dp)) {
@@ -148,6 +167,12 @@ fun SmallStatCard(label: String, value: String, modifier: Modifier = Modifier, c
     }
 }
 
+/**
+ * Fila representativa de una tienda registrada con controles de gobernanza (verificar, suspender).
+ *
+ * @param store El objeto [Store] de datos del comercio.
+ * @param onStatusChange Callback para notificar cambios de estado en la licencia.
+ */
 @Composable
 fun StoreGovernanceItem(store: Store, onStatusChange: (String) -> Unit) {
     val statusText = when(store.status) {

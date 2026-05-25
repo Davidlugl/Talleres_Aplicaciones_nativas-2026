@@ -20,6 +20,14 @@ import android.content.Intent
 import android.net.Uri
 import com.example.herbhopper_v1.R
 
+/**
+ * Pantalla del Centro de Ayuda para el paciente.
+ * Presenta una lista de Preguntas Frecuentes (FAQ) y proporciona canales directos de soporte
+ * como chat en vivo (Live Chat) y envío de correo electrónico a soporte técnico.
+ *
+ * @param onBack Función de retorno (callback) que se ejecuta al presionar el botón de regresar.
+ * @param onChatClick Función de retorno (callback) que se ejecuta al presionar el botón de Chat en Vivo.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpCenterScreen(onBack: () -> Unit, onChatClick: () -> Unit = {}) {
@@ -113,6 +121,13 @@ fun HelpCenterScreen(onBack: () -> Unit, onChatClick: () -> Unit = {}) {
     }
 }
 
+/**
+ * Componente visual que representa un elemento individual de Pregunta Frecuente (FAQ).
+ * Muestra la pregunta en un formato destacado y la respuesta descriptiva dentro de una tarjeta con bordes redondeados.
+ *
+ * @param question El texto de la pregunta a mostrar.
+ * @param answer El texto de la respuesta correspondiente.
+ */
 @Composable
 fun FaqItem(question: String, answer: String) {
     Card(

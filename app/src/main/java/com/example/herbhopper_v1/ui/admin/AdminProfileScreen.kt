@@ -21,6 +21,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.herbhopper_v1.ui.components.AdminBottomNavBar
 
+/**
+ * Pantalla de Perfil de Administrador (Admin Profile Screen).
+ * Muestra los datos de la cuenta de súper administrador, configuraciones de seguridad,
+ * políticas del sistema global y proporciona accesos para configurar alertas globales o cerrar sesión de forma segura.
+ *
+ * @param onBack Función callback para volver a la pantalla anterior.
+ * @param onNavigate Función callback para navegar a diferentes rutas del módulo administrador.
+ * @param onLogout Función callback para realizar el cierre de sesión seguro.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminProfileScreen(
@@ -99,6 +108,13 @@ fun AdminProfileScreen(
     }
 }
 
+/**
+ * Tarjeta individual representativa de una opción de configuración global del sistema para administradores.
+ *
+ * @param icon Icono ilustrativo de la opción.
+ * @param title Título legible.
+ * @param subtitle Descripción breve del parámetro del sistema.
+ */
 @Composable
 fun AdminSettingItem(icon: ImageVector, title: String, subtitle: String) {
     Card(

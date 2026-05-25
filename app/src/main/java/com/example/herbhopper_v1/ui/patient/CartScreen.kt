@@ -25,8 +25,16 @@ import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.model.CartItem
 import com.example.herbhopper_v1.viewmodel.CartViewModel
-import java.util.Locale
 
+/**
+ * Pantalla del Carrito de Compras del paciente.
+ * Permite visualizar los productos agregados, ajustar sus cantidades, eliminarlos y ver un resumen
+ * detallado de costos (subtotal, envío y total) antes de proceder al pago.
+ *
+ * @param viewModel Instancia de [CartViewModel] que gestiona el estado y operaciones del carrito de compras.
+ * @param onBack Función de retorno (callback) que se ejecuta al presionar el botón de regresar.
+ * @param onCheckout Función de retorno (callback) que se ejecuta al presionar el botón de pagar (Checkout).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
@@ -39,7 +47,7 @@ fun CartScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(32.dp).background(Color.Transparent, CircleShape))
                         Spacer(modifier = Modifier.width(8.dp))
@@ -75,7 +83,8 @@ fun CartScreen(
                 }
             } else {
                 items(items) { item ->
-                    CartItem(
+                    // Solución al Issue 4: Usar CartItemRow para evitar conflictos de nombres con la entidad de modelo CartItem
+                    CartItemRow(
                         item = item,
                         onUpdateQuantity = { delta -> viewModel.updateQuantity(item.product.id, delta) },
                         onRemove = { viewModel.removeFromCart(item.product.id) }
@@ -108,9 +117,9 @@ fun CartScreen(
                             }
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(32.dp))
-                    
+
                     Button(
                         onClick = onCheckout,
                         modifier = Modifier.fillMaxWidth().height(64.dp),
@@ -119,9 +128,9 @@ fun CartScreen(
                     ) {
                         Text(stringResource(id = R.string.checkout), fontWeight = FontWeight.Bold)
                     }
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
-                    
+
                     TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -129,7 +138,7 @@ fun CartScreen(
                             Text(stringResource(id = R.string.continue_shopping), color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(64.dp))
                 }
             }
@@ -137,8 +146,16 @@ fun CartScreen(
     }
 }
 
+/**
+ * Fila individual que representa un producto dentro del carrito de compras.
+ * Muestra la imagen, nombre, precio unitario y permite aumentar, disminuir o eliminar el producto.
+ *
+ * @param item El objeto de tipo [CartItem] que contiene la información del producto y su cantidad seleccionada.
+ * @param onUpdateQuantity Función que recibe la diferencia (delta) para actualizar la cantidad del producto.
+ * @param onRemove Función que se ejecuta para eliminar el producto del carrito.
+ */
 @Composable
-fun CartItem(
+fun CartItemRow(
     item: CartItem,
     onUpdateQuantity: (Int) -> Unit,
     onRemove: () -> Unit
@@ -149,7 +166,38 @@ fun CartItem(
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant))
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val imageResId = remember(item.product.imageUrl) {
+                if (!item.product.imageUrl.isNullOrEmpty()) {
+                    context.resources.getIdentifier(item.product.imageUrl, "drawable", context.packageName)
+                } else {
+                    0
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (imageResId != 0) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = imageResId),
+                        contentDescription = item.product.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(stringResource(id = R.string.botanico), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, letterSpacing = 1.sp)
@@ -171,6 +219,14 @@ fun CartItem(
     }
 }
 
+/**
+ * Componente que representa una fila con etiqueta y valor de resumen de costo.
+ * Utilizado para mostrar de forma limpia conceptos como subtotal y costos de envío.
+ *
+ * @param label Etiqueta o concepto a mostrar (ej. Subtotal).
+ * @param value Valor correspondiente en formato de texto.
+ * @param color Color del texto del valor, por defecto el color estándar de texto.
+ */
 @Composable
 fun SummaryRow(label: String, value: String, color: Color = MaterialTheme.colorScheme.onSurface) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {

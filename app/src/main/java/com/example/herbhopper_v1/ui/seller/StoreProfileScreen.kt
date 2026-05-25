@@ -16,8 +16,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.herbhopper_v1.R
-import com.example.herbhopper_v1.ui.components.HerbHopperIcons
+import com.example.herbhopper_v1.navigation.ProfileOptionDestination
 
+/**
+ * Pantalla de Perfil de la Tienda del Vendedor (Store Profile Screen).
+ * Muestra la información del comercio verificado y organiza las opciones de configuración
+ * (Editar Información, Ubicación del Local, Notificaciones y Cuentas de Cobro) de forma estructurada.
+ * Facilita el cierre de sesión seguro del vendedor de vuelta al login.
+ *
+ * @param onBack Función callback para retornar a la pantalla anterior.
+ * @param onNavigate Función callback para navegar a otras secciones generales del vendedor.
+ * @param onLogout Función callback para cerrar sesión de manera definitiva.
+ * @param onOptionClick Función callback para despachar la navegación a sub-secciones detalladas de perfil de tienda.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreProfileScreen(
@@ -66,13 +77,27 @@ fun StoreProfileScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            val settingsText = stringResource(id = R.string.settings)
-            val notificationsText = stringResource(id = R.string.notifications)
-
-            ProfileSettingItem(icon = Icons.Default.Edit, title = stringResource(id = R.string.edit_info), onClick = { onOptionClick(settingsText) })
-            ProfileSettingItem(icon = Icons.Default.LocationOn, title = stringResource(id = R.string.store_location), onClick = { onOptionClick("Direcciones") })
-            ProfileSettingItem(icon = Icons.Default.Notifications, title = stringResource(id = R.string.notifications), onClick = { onOptionClick(notificationsText) })
-            ProfileSettingItem(icon = Icons.Default.Payment, title = stringResource(id = R.string.payment_account), onClick = { onOptionClick("Métodos de Pago") })
+            // Solución al Issue 7: Usar el enum type-safe ProfileOptionDestination
+            ProfileSettingItem(
+                icon = Icons.Default.Edit, 
+                title = stringResource(id = R.string.edit_info), 
+                onClick = { onOptionClick(ProfileOptionDestination.CONFIGURATION.key) }
+            )
+            ProfileSettingItem(
+                icon = Icons.Default.LocationOn, 
+                title = stringResource(id = R.string.store_location), 
+                onClick = { onOptionClick(ProfileOptionDestination.ADDRESSES.key) }
+            )
+            ProfileSettingItem(
+                icon = Icons.Default.Notifications, 
+                title = stringResource(id = R.string.notifications), 
+                onClick = { onOptionClick(ProfileOptionDestination.NOTIFICATIONS.key) }
+            )
+            ProfileSettingItem(
+                icon = Icons.Default.Payment, 
+                title = stringResource(id = R.string.payment_account), 
+                onClick = { onOptionClick(ProfileOptionDestination.PAYMENT_METHODS.key) }
+            )
             ProfileSettingItem(icon = Icons.Default.Security, title = stringResource(id = R.string.security))
 
             Spacer(modifier = Modifier.weight(1f))
@@ -89,6 +114,14 @@ fun StoreProfileScreen(
     }
 }
 
+/**
+ * Componente de fila individual para las opciones del perfil de la tienda.
+ * Muestra el icono representativo, título e indicador Chevron derecho de manera uniforme.
+ *
+ * @param icon Icono descriptivo de tipo [ImageVector].
+ * @param title Nombre de la opción de configuración.
+ * @param onClick Acción ejecutada cuando el usuario pulsa sobre la opción.
+ */
 @Composable
 fun ProfileSettingItem(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, onClick: () -> Unit = {}) {
     Surface(

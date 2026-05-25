@@ -17,6 +17,17 @@ import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.data.Product
 import com.example.herbhopper_v1.viewmodel.ProductViewModel
 
+/**
+ * Pantalla de Creación y Edición del Inventario (Inventory CRUD Screen).
+ * Ofrece un formulario interactivo para registrar un nuevo producto o actualizar
+ * los detalles de un producto existente. Realiza la comprobación del producto cargándolo
+ * desde la lista de [ProductViewModel] y actualiza los campos Nombre, Precio, Categoría y Descripción,
+ * guardando los cambios de forma reactiva en la base de datos local.
+ *
+ * @param productId Identificador del producto a editar; si es null, la pantalla se comporta en modo de inserción/creación.
+ * @param onBack Función callback para retornar a la pantalla de inventario.
+ * @param viewModel Instancia de [ProductViewModel] para la persistencia e inserción/actualización de productos.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryCrudScreen(

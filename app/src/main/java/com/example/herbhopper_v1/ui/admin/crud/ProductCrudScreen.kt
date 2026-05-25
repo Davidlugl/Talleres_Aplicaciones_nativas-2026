@@ -18,6 +18,15 @@ import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.data.Product
 import com.example.herbhopper_v1.viewmodel.ProductViewModel
 
+/**
+ * Pantalla de Operaciones CRUD de Productos para el Administrador (Product CRUD Screen).
+ * Ofrece un panel administrativo unificado para gestionar el catálogo global de productos de la aplicación.
+ * Permite registrar nuevos productos ingresando campos de texto (Nombre, Precio, Categoría y Descripción),
+ * cargar de forma reactiva los datos del producto seleccionado para edición, despachar actualizaciones
+ * o eliminar productos de la persistencia de datos mediante [ProductViewModel].
+ *
+ * @param viewModel Instancia de [ProductViewModel] para la persistencia e inserción/actualización de productos en la base de datos.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductCrudScreen(viewModel: ProductViewModel = viewModel()) {

@@ -18,7 +18,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.herbhopper_v1.R
 import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 
+/**
+ * Pantalla General de Ajustes de Perfil (Profile Settings Screen).
+ * Actúa como contenedor dinámico para mostrar diferentes sub-pantallas según la sección
+ * seleccionada por el usuario (Configuración de Cuenta, Métodos de Pago, Direcciones, Notificaciones).
+ *
+ * @param title El título de la sub-sección seleccionada a renderizar (ej. "Configuración", "Métodos de Pago").
+ * @param onBack Función callback para regresar a la pantalla anterior.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileSettingsScreen(
@@ -55,6 +67,11 @@ fun ProfileSettingsScreen(
     }
 }
 
+/**
+ * Formulario y gestión para los Ajustes de Métodos de Pago.
+ * Permite agregar una nueva tarjeta de crédito mediante un diálogo modal, validando la longitud
+ * y formato de la entrada de datos, y vinculándola al perfil persistente a través de [ProfileViewModel].
+ */
 @Composable
 fun PaymentSettings() {
     val context = LocalContext.current
@@ -79,29 +96,23 @@ fun PaymentSettings() {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = cardNumber,
-                        onValueChange = { if (it.length <= 16) cardNumber = it },
+                        onValueChange = { cardNumber = it.filter { c -> c.isDigit() }.take(16) },
                         label = { Text(stringResource(id = R.string.card_number_label)) },
-                        placeholder = { Text(stringResource(id = R.string.card_digits_placeholder)) }
+                        placeholder = { Text(stringResource(id = R.string.card_digits_placeholder)) },
+                        visualTransformation = ProfileCreditCardTransformation()
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
                             value = expiry,
-                            onValueChange = {
-                                val clean = it.filter { char -> char.isDigit() }
-                                if (clean.length <= 4) {
-                                    expiry = when {
-                                        clean.length >= 3 -> "${clean.take(2)}/${clean.drop(2)}"
-                                        else -> clean
-                                    }
-                                }
-                            },
+                            onValueChange = { expiry = it.filter { c -> c.isDigit() }.take(4) },
                             label = { Text(stringResource(id = R.string.expiry_label)) },
                             placeholder = { Text(stringResource(id = R.string.expiry_placeholder)) },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            visualTransformation = ProfileExpiryDateTransformation()
                         )
                         OutlinedTextField(
                             value = cvv,
-                            onValueChange = { if (it.length <= 3) cvv = it },
+                            onValueChange = { cvv = it.filter { c -> c.isDigit() }.take(3) },
                             label = { Text(stringResource(id = R.string.cvv_label)) },
                             placeholder = { Text(stringResource(id = R.string.cvv_placeholder)) },
                             modifier = Modifier.weight(1f)
@@ -111,20 +122,31 @@ fun PaymentSettings() {
             },
             confirmButton = {
                 Button(onClick = {
-                    if (cardNumber.length == 16) {
-                        val method = "**** **** **** ${cardNumber.takeLast(4)}"
-                        val updated = profileFromDb?.copy(paymentMethod = method) ?: com.example.herbhopper_v1.data.UserProfile(
-                            uid = uid,
-                            name = currentUser?.displayName ?: "Usuario",
-                            email = currentUser?.email ?: "",
-                            role = "PATIENT",
-                            paymentMethod = method
-                        )
-                        viewModel.saveProfile(updated)
-                        Toast.makeText(context, "Método de pago guardado", Toast.LENGTH_SHORT).show()
-                        showDialog = false
-                        cardNumber = ""; expiry = ""; cvv = ""
+                    if (cardNumber.length != 16) {
+                        Toast.makeText(context, context.getString(R.string.toast_invalid_card), Toast.LENGTH_SHORT).show()
+                        return@Button
                     }
+                    if (expiry.length != 4) {
+                        Toast.makeText(context, context.getString(R.string.toast_invalid_expiry), Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (cvv.length != 3) {
+                        Toast.makeText(context, context.getString(R.string.toast_invalid_cvv), Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    val method = "**** **** **** ${cardNumber.takeLast(4)}"
+                    val updated = profileFromDb?.copy(paymentMethod = method) ?: com.example.herbhopper_v1.data.UserProfile(
+                        uid = uid,
+                        name = currentUser?.displayName ?: "Usuario",
+                        email = currentUser?.email ?: "",
+                        role = "PATIENT",
+                        paymentMethod = method
+                    )
+                    viewModel.saveProfile(updated)
+                    Toast.makeText(context, context.getString(R.string.toast_payment_method_saved), Toast.LENGTH_SHORT).show()
+                    showDialog = false
+                    cardNumber = ""; expiry = ""; cvv = ""
                 }) { Text(stringResource(id = R.string.save_btn)) }
             },
             dismissButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.cancel_btn)) } }
@@ -159,6 +181,11 @@ fun PaymentSettings() {
     }
 }
 
+/**
+ * Formulario y gestión para los Ajustes de Direcciones de Entrega.
+ * Permite al usuario registrar o actualizar su dirección principal mediante un diálogo,
+ * editando la información existente o eliminándola de la base de datos persistente.
+ */
 @Composable
 fun AddressSettings() {
     val context = LocalContext.current
@@ -240,6 +267,11 @@ fun AddressSettings() {
     }
 }
 
+/**
+ * Formulario para los Ajustes de Datos de la Cuenta del usuario.
+ * Permite modificar campos clave como Nombre Completo, Teléfono y Correo Electrónico
+ * y guardar los cambios directamente en el repositorio persistente.
+ */
 @Composable
 fun AccountSettings() {
     val context = LocalContext.current
@@ -258,7 +290,8 @@ fun AccountSettings() {
     LaunchedEffect(profileFromDb) {
         profileFromDb?.let {
             name = it.name
-            phone = it.phone ?: ""
+            val prefixVal = context.getString(R.string.colombia_prefix).trim()
+            phone = it.phone?.removePrefix(prefixVal)?.trim() ?: ""
             email = it.email
         }
     }
@@ -274,8 +307,9 @@ fun AccountSettings() {
         )
         OutlinedTextField(
             value = phone,
-            onValueChange = { phone = it },
+            onValueChange = { input -> phone = input.filter { it.isDigit() }.take(10) },
             label = { Text(stringResource(id = R.string.phone_label)) },
+            prefix = { Text(stringResource(id = R.string.colombia_prefix)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Phone, null) }
         )
@@ -290,21 +324,29 @@ fun AccountSettings() {
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
+                val cleanPhone = phone.filter { it.isDigit() }.take(10)
+                if (cleanPhone.length != 10) {
+                    Toast.makeText(context, context.getString(R.string.toast_invalid_phone), Toast.LENGTH_LONG).show()
+                    return@Button
+                }
+
+                val prefixVal = context.getString(R.string.colombia_prefix)
+                val formattedPhone = "$prefixVal$cleanPhone"
                 val updatedProfile = profileFromDb?.copy(
                     name = name,
                     email = email,
-                    phone = phone
+                    phone = formattedPhone
                 ) ?: com.example.herbhopper_v1.data.UserProfile(
                     uid = uid,
                     name = name,
                     email = email,
-                    phone = phone,
+                    phone = formattedPhone,
                     role = "PATIENT"
                 )
 
                 android.util.Log.d("ProfileSettings", "Click en Guardar para UID: $uid")
                 viewModel.saveProfile(updatedProfile)
-                Toast.makeText(context, "Guardando cambios...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_saving_changes), Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
@@ -314,6 +356,11 @@ fun AccountSettings() {
     }
 }
 
+/**
+ * Panel de Ajustes de Notificaciones.
+ * Proporciona interruptores (Switches) para configurar preferencias de avisos Push,
+ * promociones por email, alertas de pedidos y alertas de seguridad.
+ */
 @Composable
 fun NotificationSettings() {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -325,6 +372,12 @@ fun NotificationSettings() {
     }
 }
 
+/**
+ * Fila individual con interruptor Switch para una preferencia de notificación.
+ *
+ * @param title Nombre de la notificación o preferencia a activar/desactivar.
+ * @param initial Estado booleano inicial del interruptor.
+ */
 @Composable
 fun NotificationToggle(title: String, initial: Boolean) {
     var checked by remember { mutableStateOf(initial) }
@@ -337,6 +390,16 @@ fun NotificationToggle(title: String, initial: Boolean) {
     }
 }
 
+/**
+ * Componente visual reutilizable de tarjeta para representar una dirección o tarjeta de pago guardada.
+ * Permite opcionalmente editar y/o borrar el registro mediante llamadas callback.
+ *
+ * @param title Título o etiqueta principal del registro.
+ * @param subtitle Subtítulo o valor extendido (ej. dirección completa o máscara de tarjeta).
+ * @param icon Icono ilustrativo de tipo [ImageVector].
+ * @param onEdit Función callback opcional ejecutada al presionar el botón de editar.
+ * @param onDelete Función callback ejecutada al presionar el botón de eliminar.
+ */
 @Composable
 fun SettingItem(title: String, subtitle: String, icon: ImageVector, onEdit: (() -> Unit)? = null, onDelete: () -> Unit = {}) {
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -353,5 +416,69 @@ fun SettingItem(title: String, subtitle: String, icon: ImageVector, onEdit: (() 
             }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
         }
+    }
+}
+
+/**
+ * Transformación visual para tarjetas de crédito (agrupa dígitos de 4 en 4 separados por espacios).
+ */
+private class ProfileCreditCardTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val trimmed = if (text.text.length >= 16) text.text.substring(0, 16) else text.text
+        var out = ""
+        for (i in trimmed.indices) {
+            out += trimmed[i]
+            if (i % 4 == 3 && i < 15) out += " "
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 8) return offset + 1
+                if (offset <= 12) return offset + 2
+                if (offset <= 16) return offset + 3
+                return 19
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 4) return offset
+                if (offset <= 9) return offset - 1
+                if (offset <= 14) return offset - 2
+                if (offset <= 19) return offset - 3
+                return 16
+            }
+        }
+
+        return TransformedText(AnnotatedString(out), offsetMapping)
+    }
+}
+
+/**
+ * Transformación visual para fecha de vencimiento en formato MM/AA.
+ */
+private class ProfileExpiryDateTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val trimmed = if (text.text.length >= 4) text.text.substring(0, 4) else text.text
+        var out = ""
+        for (i in trimmed.indices) {
+            out += trimmed[i]
+            if (i == 1) out += "/"
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                if (offset <= 1) return offset
+                if (offset <= 4) return offset + 1
+                return 5
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                if (offset <= 2) return offset
+                if (offset <= 5) return offset - 1
+                return 4
+            }
+        }
+
+        return TransformedText(AnnotatedString(out), offsetMapping)
     }
 }

@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.herbhopper_v1.R
 
 object HerbHopperIcons {
     val Prescriptions: ImageVector = Icons.Default.Medication
@@ -26,4 +27,6 @@ object HerbHopperIcons {
     val Logout: ImageVector = Icons.AutoMirrored.Filled.Logout
     val ArrowForward: ImageVector = Icons.AutoMirrored.Filled.ArrowForward
     val Backspace: ImageVector = Icons.AutoMirrored.Filled.Backspace
+    
+    val AppLogo = R.drawable.app_logo
 }

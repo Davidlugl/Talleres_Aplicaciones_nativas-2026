@@ -24,6 +24,14 @@ import androidx.compose.runtime.setValue
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.components.AdminBottomNavBar
 
+/**
+ * Pantalla de Control de Infraestructura de Sistemas (System Infrastructure Screen).
+ * Ofrece un diagnóstico exhaustivo en tiempo real de los servicios y servidores del ecosistema.
+ * Muestra el estado operativo de la Base de Datos, Autenticación, API de Pagos y Servidores de Almacenamiento,
+ * facilitando al administrador activar alertas y solicitar un reinicio forzado de servicios mediante un modal interactivo.
+ *
+ * @param onNavigate Función callback para navegar a diferentes sub-secciones del panel de administración.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SystemInfrastructureScreen(onNavigate: (String) -> Unit = {}) {
@@ -88,6 +96,13 @@ fun SystemInfrastructureScreen(onNavigate: (String) -> Unit = {}) {
     }
 }
 
+/**
+ * Fila descriptiva para representar el estado en línea o de mantenimiento de un servicio del sistema.
+ *
+ * @param name Nombre identificativo del servicio (ej. "API de Pagos").
+ * @param status Etiqueta de texto que describe el estado (ej. "En Línea", "Mantenimiento").
+ * @param isOnline Booleano que define si el servicio está operativo o caído/mantenimiento.
+ */
 @Composable
 fun SystemItem(name: String, status: String, isOnline: Boolean) {
     Surface(

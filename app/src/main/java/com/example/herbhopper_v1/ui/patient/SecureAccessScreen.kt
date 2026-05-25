@@ -1,5 +1,6 @@
 package com.example.herbhopper_v1.ui.patient
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -20,6 +22,21 @@ import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.theme.*
 
+/**
+ * Pantalla de Acceso Seguro (Secure Access Screen).
+ * Proporciona opciones seguras y estéticas para iniciar sesión en la aplicación.
+ * Ofrece la integración con Google Sign-In mediante un selector de roles (Paciente, Vendedor, Administrador)
+ * simulado mediante un diálogo modal para pruebas rápidas de desarrollo, y una opción tradicional
+ * de acceso mediante correo electrónico y contraseña.
+ *
+ * @param onGoogleLogin Callback ejecutado al autenticarse con la cuenta Google de Paciente.
+ * @param onBiometricClick Callback ejecutado al intentar iniciar sesión de forma biométrica.
+ * @param onPinClick Callback ejecutado para ir al inicio de sesión tradicional.
+ * @param onSignUpClick Callback ejecutado al pulsar en "Registrarse".
+ * @param onForgotPasswordClick Callback ejecutado al pulsar sobre "Restablecer credenciales".
+ * @param onAdminAccess Callback ejecutado al seleccionar la cuenta Google de Administrador.
+ * @param onSellerAccess Callback ejecutado al seleccionar la cuenta Google de Vendedor.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SecureAccessScreen(
@@ -29,7 +46,8 @@ fun SecureAccessScreen(
     onSignUpClick: () -> Unit,
     onForgotPasswordClick: () -> Unit,
     onAdminAccess: () -> Unit,
-    onSellerAccess: () -> Unit
+    onSellerAccess: () -> Unit,
+    profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     var showGoogleSelector by remember { mutableStateOf(false) }
 
@@ -47,9 +65,19 @@ fun SecureAccessScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text("Selecciona una cuenta para continuar a HerbHopper:", style = MaterialTheme.typography.bodyMedium)
                     
-                    // Cuenta 1
+                    // Cuenta 1: Cliente / Paciente
                     Card(
-                        onClick = { showGoogleSelector = false; onGoogleLogin() },
+                        onClick = {
+                            showGoogleSelector = false
+                            val profile = com.example.herbhopper_v1.data.UserProfile(
+                                uid = "dummy_uid_patient",
+                                name = "David G.",
+                                email = "david.g@gmail.com",
+                                role = "PATIENT"
+                            )
+                            profileViewModel.saveProfile(profile)
+                            onGoogleLogin()
+                        },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -65,15 +93,53 @@ fun SecureAccessScreen(
                         }
                     }
 
-                    // Cuenta 2
+                    // Cuenta 2: Vendedor
                     Card(
-                        onClick = { showGoogleSelector = false; onGoogleLogin() },
+                        onClick = {
+                            showGoogleSelector = false
+                            val profile = com.example.herbhopper_v1.data.UserProfile(
+                                uid = "dummy_uid_seller",
+                                name = "Vendedor Herb",
+                                email = "seller@herbhopper.com",
+                                role = "SELLER"
+                            )
+                            profileViewModel.saveProfile(profile)
+                            onSellerAccess()
+                        },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("H", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer) }
+                                Box(contentAlignment = Alignment.Center) { Text("V", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer) }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text("Vendedor Herb", fontWeight = FontWeight.Bold)
+                                Text("seller@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    // Cuenta 3: Administrador / Desarrollador
+                    Card(
+                        onClick = {
+                            showGoogleSelector = false
+                            val profile = com.example.herbhopper_v1.data.UserProfile(
+                                uid = "dummy_uid_admin",
+                                name = "HerbHopper Dev",
+                                email = "dev@herbhopper.com",
+                                role = "ADMIN"
+                            )
+                            profileViewModel.saveProfile(profile)
+                            onAdminAccess()
+                        },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("H", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer) }
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
@@ -124,11 +190,12 @@ fun SecureAccessScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 32.dp)
                 ) {
-                    Box(
+                    Image(
+                        painter = painterResource(id = R.drawable.app_logo),
+                        contentDescription = "Herb Hopper Logo",
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
@@ -252,6 +319,18 @@ fun SecureAccessScreen(
     }
 }
 
+/**
+ * Componente visual de fila para representar una opción de acceso.
+ * Muestra un icono de color personalizable a la izquierda, título y subtítulo detallados,
+ * y un indicador de flecha derecha para invitar a la interacción.
+ *
+ * @param icon Icono ilustrativo de la opción.
+ * @param title Título legible.
+ * @param subtitle Descripción breve.
+ * @param containerColor Color de fondo del contenedor del icono circular.
+ * @param iconColor Color del vector de icono.
+ * @param onClick Acción ejecutada cuando el usuario pulsa sobre la opción de acceso.
+ */
 @Composable
 fun AccessOption(
     icon: androidx.compose.ui.graphics.vector.ImageVector,

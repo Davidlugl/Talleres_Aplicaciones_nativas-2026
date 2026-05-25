@@ -55,10 +55,13 @@
     <string name="catalog">Catálogo</string>
     <string name="catalog_subtitle">Formulaciones botánicas de grado farmacéutico</string>
     <string name="all">Todos</string>
-    <string name="oil">Aceite</string>
-    <string name="capsules">Cápsulas</string>
-    <string name="creams">Cremas</string>
-    <string name="extracts">Extractos</string>
+    <string name="oil">Líquidos y Aceites</string>
+    <string name="capsules">Comestibles</string>
+    <string name="creams">Tópicos</string>
+    <string name="extracts">Bienestar y Cuidado</string>
+    <string name="flower">Concentrados y Otros</string>
+    <string name="category_bebidas">Bebidas y Suplementos</string>
+    <string name="category_especializados">Comestibles Especializados</string>
 
     <!-- Cart -->
     <string name="shopping_cart">Carrito de Compras</string>
@@ -350,5 +353,30 @@
     <string name="toast_services_restarting">Reiniciando servicios...</string>
     <string name="toast_help_opened">Abriendo centro de ayuda...</string>
     <string name="toast_settings_dev">Configuración en desarrollo...</string>
+
+    <!-- Profile Options string resources -->
+    <string name="profile_option_settings">Configuración de Cuenta</string>
+    <string name="profile_option_payment">Métodos de Pago</string>
+    <string name="profile_option_addresses">Direcciones de Entrega</string>
+    <string name="profile_option_notifications">Notificaciones</string>
+    <string name="no_email">Sin correo</string>
+
+    <!-- Validation and Authentication Toasts -->
+    <string name="toast_fill_credentials">Por favor complete los campos obligatorios</string>
+    <string name="toast_fill_name_email">Por favor complete el nombre y el correo electrónico</string>
+    <string name="toast_invalid_phone">El número de teléfono colombiano debe tener exactamente 10 dígitos</string>
+    <string name="toast_invalid_email">El correo debe ser de un proveedor válido (ej: Gmail, Outlook, Hotmail, Yahoo)</string>
+    <string name="toast_account_not_found">Esta cuenta no existe. Redirigiendo a registro...</string>
+    <string name="toast_fill_login">Por favor ingrese correo y contraseña</string>
+    <string name="toast_offline_mode">Modo sin conexión. Cargando perfil local...</string>
+    <string name="toast_wrong_credentials">Contraseña incorrecta o usuario inválido.</string>
+    <string name="toast_saving_changes">Guardando cambios...</string>
+    <string name="toast_invalid_card">El número de tarjeta debe tener 16 dígitos</string>
+    <string name="toast_invalid_expiry">La fecha de vencimiento debe tener el formato MM/AA</string>
+    <string name="toast_invalid_cvv">El CVV debe tener 3 dígitos</string>
+    <string name="toast_payment_success">¡Pago exitoso!</string>
+    <string name="toast_payment_method_saved">Método de pago guardado</string>
+    <string name="colombia_prefix">+57 </string>
+    <string name="phone_placeholder">3001234567</string>
 
 </resources>

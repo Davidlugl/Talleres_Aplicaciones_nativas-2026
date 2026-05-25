@@ -30,6 +30,18 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.GoogleAuthProvider as GoogleAuthProvider1
 
+/**
+ * Pantalla de Inicio de Sesión (Login Screen).
+ * Permite al usuario autenticarse en el sistema HerbHopper utilizando sus credenciales de correo electrónico
+ * y contraseña o mediante una cuenta de Google. Realiza una redirección condicional e inteligente según
+ * el rol del usuario (Paciente, Vendedor o Administrador) derivado del correo ingresado.
+ *
+ * @param onPatientSuccess Función callback que se ejecuta al iniciar sesión exitosamente como Paciente.
+ * @param onSellerSuccess Función callback que se ejecuta al iniciar sesión exitosamente como Vendedor (Seller).
+ * @param onAdminSuccess Función callback que se ejecuta al iniciar sesión exitosamente como Administrador (Admin).
+ * @param onForgotPasswordClick Función callback que se ejecuta al pulsar sobre "Olvidó su contraseña".
+ * @param profileViewModel Instancia de [ProfileViewModel] para la gestión del perfil del usuario logueado.
+ */
 @Suppress("DEPRECATION")
 @Composable
 fun LoginScreen(
@@ -37,6 +49,7 @@ fun LoginScreen(
     onSellerSuccess: () -> Unit,
     onAdminSuccess: () -> Unit,
     onForgotPasswordClick: () -> Unit = {},
+    onSignUpClick: () -> Unit = {},
     profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
@@ -67,24 +80,44 @@ fun LoginScreen(
                     Text("Selecciona una cuenta para continuar:", style = MaterialTheme.typography.bodyMedium)
                     
                     Card(
-                        onClick = { showGoogleSelector = false; onPatientSuccess() },
+                        onClick = {
+                            showGoogleSelector = false
+                            val profile = com.example.herbhopper_v1.data.UserProfile(
+                                uid = "dummy_uid_patient",
+                                name = "David G.",
+                                email = "david.g@gmail.com",
+                                role = "PATIENT"
+                            )
+                            profileViewModel.saveProfile(profile)
+                            onPatientSuccess()
+                        },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                             Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("J", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
+                                Box(contentAlignment = Alignment.Center) { Text("D", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
-                                Text("Juan Paciente", fontWeight = FontWeight.Bold)
-                                Text("juan@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("David G.", fontWeight = FontWeight.Bold)
+                                Text("david.g@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
 
                     Card(
-                        onClick = { showGoogleSelector = false; onSellerSuccess() },
+                        onClick = {
+                            showGoogleSelector = false
+                            val profile = com.example.herbhopper_v1.data.UserProfile(
+                                uid = "dummy_uid_seller",
+                                name = "Vendedor Herb",
+                                email = "seller@herbhopper.com",
+                                role = "SELLER"
+                            )
+                            profileViewModel.saveProfile(profile)
+                            onSellerSuccess()
+                        },
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -95,7 +128,34 @@ fun LoginScreen(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text("Vendedor Herb", fontWeight = FontWeight.Bold)
-                                Text("seller@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("seller@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+
+                    Card(
+                        onClick = {
+                            showGoogleSelector = false
+                            val profile = com.example.herbhopper_v1.data.UserProfile(
+                                uid = "dummy_uid_admin",
+                                name = "HerbHopper Dev",
+                                email = "dev@herbhopper.com",
+                                role = "ADMIN"
+                            )
+                            profileViewModel.saveProfile(profile)
+                            onAdminSuccess()
+                        },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text("H", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer) }
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column {
+                                Text("HerbHopper Dev", fontWeight = FontWeight.Bold)
+                                Text("dev@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -227,22 +287,79 @@ fun LoginScreen(
 
                         Button(
                             onClick = {
-                                if (email.isNotBlank() && password.isNotBlank()) {
+                                val trimmedEmail = email.trim()
+                                val lowercaseEmail = trimmedEmail.lowercase()
+                                val allowedKeywords = listOf("gmail", "outlook", "hotmail", "yahoo", "icloud", "live", "herbhopper")
+                                val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
+
+                                if (email.isBlank() || password.isBlank()) {
+                                    android.widget.Toast.makeText(context, context.getString(R.string.toast_fill_login), android.widget.Toast.LENGTH_SHORT).show()
+                                } else if (!trimmedEmail.matches(emailRegex) || !allowedKeywords.any { lowercaseEmail.contains(it) }) {
+                                    android.widget.Toast.makeText(context, context.getString(R.string.toast_invalid_email), android.widget.Toast.LENGTH_LONG).show()
+                                } else {
                                     isLoading = true
+                                    
+                                    // 2. Si no tiene cuenta, la tiene que crear
                                     scope.launch {
-                                        kotlinx.coroutines.delay(1000)
-                                        isLoading = false
-                                        val lowercaseEmail = email.lowercase()
-                                        if (lowercaseEmail.contains("admin")) {
-                                            onAdminSuccess()
-                                        } else if (lowercaseEmail.contains("seller")) {
-                                            onSellerSuccess()
+                                        val existing = profileViewModel.getProfileByEmail(lowercaseEmail)
+                                        if (existing == null) {
+                                            isLoading = false
+                                            android.widget.Toast.makeText(context, context.getString(R.string.toast_account_not_found), android.widget.Toast.LENGTH_LONG).show()
+                                            onSignUpClick()
                                         } else {
-                                            onPatientSuccess()
+                                            // Proceder con inicio de sesión
+                                            fun navigateBasedOnEmail() {
+                                                if (lowercaseEmail.contains("admin") || lowercaseEmail == "dev@herbhopper.com") {
+                                                    onAdminSuccess()
+                                                } else if (lowercaseEmail.contains("seller") || lowercaseEmail == "seller@herbhopper.com" || lowercaseEmail == "seller@gmail.com") {
+                                                    onSellerSuccess()
+                                                } else {
+                                                    onPatientSuccess()
+                                                }
+                                            }
+
+                                            if (auth != null) {
+                                                auth.signInWithEmailAndPassword(email, password)
+                                                    .addOnCompleteListener { taskAuth ->
+                                                        if (taskAuth.isSuccessful) {
+                                                            val firebaseUser = auth.currentUser
+                                                            val uid = firebaseUser?.uid ?: "dummy_uid_patient"
+                                                            scope.launch {
+                                                                val localProfile = profileViewModel.getProfile(uid)
+                                                                if (localProfile == null) {
+                                                                    val newProfile = com.example.herbhopper_v1.data.UserProfile(
+                                                                        uid = uid,
+                                                                        name = firebaseUser?.displayName ?: email.substringBefore("@"),
+                                                                        email = email,
+                                                                        role = if (lowercaseEmail.contains("admin")) "ADMIN" else if (lowercaseEmail.contains("seller")) "SELLER" else "PATIENT"
+                                                                    )
+                                                                    profileViewModel.saveProfile(newProfile)
+                                                                }
+                                                                isLoading = false
+                                                                navigateBasedOnEmail()
+                                                            }
+                                                        } else {
+                                                            isLoading = false
+                                                            val exception = taskAuth.exception
+                                                            val isNetworkError = exception?.message?.contains("network", ignoreCase = true) == true ||
+                                                                    exception?.message?.contains("transition", ignoreCase = true) == true ||
+                                                                    exception?.javaClass?.simpleName?.contains("IOException", ignoreCase = true) == true
+
+                                                            if (isNetworkError) {
+                                                                android.widget.Toast.makeText(context, context.getString(R.string.toast_offline_mode), android.widget.Toast.LENGTH_SHORT).show()
+                                                                navigateBasedOnEmail()
+                                                            } else {
+                                                                android.widget.Toast.makeText(context, context.getString(R.string.toast_wrong_credentials), android.widget.Toast.LENGTH_LONG).show()
+                                                            }
+                                                        }
+                                                    }
+                                            } else {
+                                                kotlinx.coroutines.delay(1000)
+                                                isLoading = false
+                                                navigateBasedOnEmail()
+                                            }
                                         }
                                     }
-                                } else {
-                                    android.widget.Toast.makeText(context, "Por favor ingrese correo y contraseña", android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -292,6 +409,14 @@ fun LoginScreen(
                         text = stringResource(id = R.string.forgot_pin),
                         color = MaterialTheme.colorScheme.secondary,
                         fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                TextButton(onClick = onSignUpClick) {
+                    Text(
+                        text = "¿No tienes cuenta? Regístrate aquí",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
                     )
                 }
                 Text(

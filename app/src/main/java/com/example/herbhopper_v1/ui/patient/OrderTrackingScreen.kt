@@ -21,6 +21,18 @@ import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.theme.*
 import com.example.herbhopper_v1.ui.components.PatientBottomNavBar
 
+/**
+ * Pantalla de Seguimiento de Pedidos en Tiempo Real (Order Tracking).
+ * Simula un mapa de despacho interactivo, muestra el estado actual del envío ("En Camino"),
+ * una barra de progreso indicando la cercanía del repartidor, los datos identificativos del transportador,
+ * el tipo de vehículo ecológico de reparto y la hora estimada de llegada (ETA).
+ *
+ * @param onHomeClick Función callback para navegar a la pantalla de Inicio.
+ * @param onOrdersClick Función callback para navegar al historial de pedidos.
+ * @param onScriptsClick Función callback para navegar a la validación de recetas médicas.
+ * @param onProfileClick Función callback para navegar al perfil del usuario.
+ * @param onCartClick Función callback para navegar al carrito de compras.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderTrackingScreen(

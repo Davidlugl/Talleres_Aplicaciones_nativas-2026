@@ -11,6 +11,9 @@ interface UserDao {
     @Query("SELECT * FROM user_profiles WHERE uid = :uid")
     suspend fun getUserProfile(uid: String): UserProfile?
 
+    @Query("SELECT * FROM user_profiles WHERE email = :email LIMIT 1")
+    suspend fun getUserProfileByEmail(email: String): UserProfile?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProfile(profile: UserProfile)
 

@@ -56,7 +56,8 @@ fun NavGraph(navController: NavHostController) {
                 onPatientSuccess = { navController.navigate("catalog") },
                 onSellerSuccess = { navController.navigate("seller_dashboard") },
                 onAdminSuccess = { navController.navigate("store_governance") },
-                onForgotPasswordClick = { navController.navigate("forgot_password") }
+                onForgotPasswordClick = { navController.navigate("forgot_password") },
+                onSignUpClick = { navController.navigate("create_account") }
             ) 
         }
         composable("create_account") { 
@@ -120,6 +121,37 @@ fun NavGraph(navController: NavHostController) {
                 totalAmount = cartItems.sumOf { it.product.price * it.quantity },
                 onBack = { navController.popBackStack() },
                 onPaymentSuccess = {
+                    if (cartItems.isNotEmpty()) {
+                        // 1. Convertir los items del carrito al formato simplificado de OrderItem
+                        val orderItems = cartItems.map { cartItem ->
+                            com.example.herbhopper_v1.data.OrderItem(
+                                productId = cartItem.product.id,
+                                productName = cartItem.product.name,
+                                quantity = cartItem.quantity,
+                                price = cartItem.product.price
+                            )
+                        }
+                        val itemsJson = com.google.gson.Gson().toJson(orderItems)
+                        
+                        // 2. Construir la Orden
+                        val orderId = "ORD-${(1000..9999).random()}-${System.currentTimeMillis() % 10000}"
+                        val newOrder = com.example.herbhopper_v1.data.Order(
+                            orderId = orderId,
+                            userId = "david_g",
+                            userName = "David G.",
+                            itemsJson = itemsJson,
+                            totalAmount = cartItems.sumOf { it.product.price * it.quantity },
+                            status = "PENDING",
+                            timestamp = System.currentTimeMillis(),
+                            address = "Calle 10 # 5-12, Bogotá",
+                            paymentMethod = "CREDIT_CARD"
+                        )
+                        
+                        // 3. Persistir en la base de datos
+                        orderViewModel.placeOrder(newOrder)
+                    }
+
+                    // 4. Limpiar el carrito y redirigir
                     cartViewModel.clearCart()
                     navController.navigate("order_history") {
                         popUpTo("cart") { inclusive = true }
@@ -129,6 +161,7 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("order_history") { 
             OrderHistoryScreen(
+                viewModel = orderViewModel,
                 onHomeClick = { navController.navigate("catalog") },
                 onOrdersClick = { },
                 onScriptsClick = { navController.navigate("prescription_validation") },
@@ -173,10 +206,14 @@ fun NavGraph(navController: NavHostController) {
 
         // Seller Flow
         composable("seller_dashboard") { 
-            SellerDashboardScreen(onNavigate = { navController.navigate(it) }) 
+            SellerDashboardScreen(
+                viewModel = productViewModel,
+                onNavigate = { navController.navigate(it) }
+            ) 
         }
         composable("inventory") { 
             InventoryScreen(
+                viewModel = productViewModel,
                 onBack = { navController.popBackStack() },
                 onNavigate = { navController.navigate(it) },
                 onAddProduct = { navController.navigate("inventory_crud") },

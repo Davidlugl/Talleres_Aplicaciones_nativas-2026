@@ -15,12 +15,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.herbhopper_v1.R
+import com.example.herbhopper_v1.model.ChatMessage
 
-data class ChatMessage(val id: String, val text: String, val isFromUser: Boolean, val timestamp: String)
-
+/**
+ * Pantalla de chat de soporte al cliente para el paciente.
+ * Permite al paciente enviar y recibir mensajes simulados con un asistente virtual de HerbHopper.
+ * Muestra el historial de la conversación en tiempo real y ofrece un campo de texto para redactar y enviar mensajes.
+ *
+ * @param onBack Función de retorno (callback) que se ejecuta al presionar el botón de regresar para volver a la pantalla anterior.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(onBack: () -> Unit) {
@@ -100,6 +108,12 @@ fun ChatScreen(onBack: () -> Unit) {
     }
 }
 
+/**
+ * Burbuja de chat individual para representar un mensaje en la conversación.
+ * Aplica estilos y alineación diferenciados según si el mensaje fue enviado por el usuario o por el asistente virtual.
+ *
+ * @param message El objeto de datos [ChatMessage] que contiene el contenido, origen y marca de tiempo del mensaje.
+ */
 @Composable
 fun ChatBubble(message: ChatMessage) {
     val alignment = if (message.isFromUser) Alignment.CenterEnd else Alignment.CenterStart

@@ -2,6 +2,7 @@ package com.example.herbhopper_v1.ui.seller
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +23,18 @@ import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.components.HerbHopperIcons
 
+/**
+ * Pantalla de Inventario General del Vendedor (Inventory Screen).
+ * Muestra una lista de todos los productos de catálogo, permitiendo al vendedor
+ * agregar nuevos artículos, editar la información de los existentes o eliminarlos
+ * de la base de datos de manera reactiva mediante el uso de [ProductViewModel].
+ *
+ * @param onBack Función callback para volver a la pantalla anterior.
+ * @param onNavigate Función callback para navegar a otras secciones del vendedor.
+ * @param onAddProduct Función callback para ir al panel de creación de nuevo producto.
+ * @param onEditProduct Función callback para ir al panel de edición del producto mediante su identificador.
+ * @param viewModel Instancia de [ProductViewModel] para la consulta y eliminación de artículos del catálogo.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(
@@ -71,8 +84,26 @@ fun InventoryScreen(
     }
 }
 
+/**
+ * Tarjeta individual de producto para el inventario del vendedor.
+ * Carga de forma segura y dinámica la imagen asociada al producto desde recursos locales,
+ * y muestra el nombre, categoría, precio formateado y accesos rápidos para editar o eliminar.
+ *
+ * @param item El objeto [Product] a representar.
+ * @param onEdit Función callback para despachar la edición del producto.
+ * @param onDelete Función callback para despachar la eliminación del producto.
+ */
 @Composable
 fun InventoryCard(item: Product, onEdit: (Int) -> Unit, onDelete: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val imageResId = remember(item.imageUrl) {
+        if (!item.imageUrl.isNullOrEmpty()) {
+            context.resources.getIdentifier(item.imageUrl, "drawable", context.packageName)
+        } else {
+            0
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -86,10 +117,24 @@ fun InventoryCard(item: Product, onEdit: (Int) -> Unit, onDelete: () -> Unit) {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(HerbHopperIcons.PottedPlant, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                if (imageResId != 0) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = imageResId),
+                        contentDescription = item.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Eco,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
