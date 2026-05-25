@@ -10,10 +10,10 @@ app.use('/uploads', express.static('uploads'));
 // Probar conexión a BD
 app.get('/api/health', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT 1 + 1 AS solution');
-        res.json({ status: 'success', message: 'Conectado a la base de datos herb-hopper-nativas', result: rows[0].solution });
+        const result = await pool.query('SELECT 1 + 1 AS solution');
+        res.json({ status: 'success', message: 'Conectado a la base de datos PostgreSQL en Render', result: result.rows[0].solution });
     } catch (error) {
-        res.status(500).json({ status: 'error', message: 'Fallo la conexión a la base de datos', error: error.message });
+        res.status(500).json({ status: 'error', message: 'Falló la conexión a la base de datos', error: error.message });
     }
 });
 
@@ -25,5 +25,5 @@ app.use('/api/orders', require('./routes/orders'));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor backend ejecutándose en el puerto ${PORT}`);
-    console.log(`📦 Conectado a phpMyAdmin: localhost - DB: herb-hopper-nativas`);
+    console.log(`📦 Conectado a PostgreSQL: Render - DB: bdlugo`);
 });

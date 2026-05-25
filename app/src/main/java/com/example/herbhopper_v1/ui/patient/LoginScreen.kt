@@ -23,12 +23,7 @@ import com.example.herbhopper_v1.ui.theme.*
 import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.GoogleAuthProvider as GoogleAuthProvider1
 
 /**
  * Pantalla de Inicio de Sesión (Login Screen).
@@ -59,141 +54,10 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var pendingUser by remember { mutableStateOf<com.google.firebase.auth.FirebaseUser?>(null) }
 
     val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
 
-    var showGoogleSelector by remember { mutableStateOf(false) }
 
-    if (showGoogleSelector) {
-        AlertDialog(
-            onDismissRequest = { showGoogleSelector = false },
-            title = { 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(24.dp).background(Color.Red, CircleShape))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Continuar con Google", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Selecciona una cuenta para continuar:", style = MaterialTheme.typography.bodyMedium)
-                    
-                    Card(
-                        onClick = {
-                            showGoogleSelector = false
-                            val profile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_patient",
-                                name = "David G.",
-                                email = "david.g@gmail.com",
-                                role = "PATIENT"
-                            )
-                            profileViewModel.saveProfile(profile)
-                            onPatientSuccess()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("D", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text("David G.", fontWeight = FontWeight.Bold)
-                                Text("david.g@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-
-                    Card(
-                        onClick = {
-                            showGoogleSelector = false
-                            val profile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_seller",
-                                name = "Vendedor Herb",
-                                email = "seller@herbhopper.com",
-                                role = "SELLER"
-                            )
-                            profileViewModel.saveProfile(profile)
-                            onSellerSuccess()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("V", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer) }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text("Vendedor Herb", fontWeight = FontWeight.Bold)
-                                Text("seller@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-
-                    Card(
-                        onClick = {
-                            showGoogleSelector = false
-                            val profile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_admin",
-                                name = "HerbHopper Dev",
-                                email = "dev@herbhopper.com",
-                                role = "ADMIN"
-                            )
-                            profileViewModel.saveProfile(profile)
-                            onAdminSuccess()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("H", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer) }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text("HerbHopper Dev", fontWeight = FontWeight.Bold)
-                                Text("dev@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = { TextButton(onClick = { showGoogleSelector = false }) { Text("Cancelar") } }
-        )
-    }
-
-    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken(context.getString(R.string.default_web_client_id))
-        .requestEmail()
-        .build()
-    val googleSignInClient = GoogleSignIn.getClient(context, gso)
-
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(ApiException::class.java)!!
-            val credential = GoogleAuthProvider1.getCredential(account.idToken, null)
-            scope.launch {
-                isLoading = true
-                auth?.signInWithCredential(credential)
-                    ?.addOnCompleteListener { taskAuth ->
-                        if (taskAuth.isSuccessful) {
-                            pendingUser = auth.currentUser
-                            showProfileModal = true
-                            isLoading = false
-                        } else {
-                            isLoading = false
-                        }
-                    }
-            }
-        } catch (e: ApiException) {
-            isLoading = false
-        }
-    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -372,33 +236,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                    Text(
-                        text = stringResource(id = R.string.or_continue_with_caps),
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                OutlinedButton(
-                    onClick = { showGoogleSelector = true },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(id = R.string.continue_google_btn), fontWeight = FontWeight.Bold)
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Spacer(modifier = Modifier.weight(1f))

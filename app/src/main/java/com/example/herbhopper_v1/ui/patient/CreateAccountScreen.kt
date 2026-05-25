@@ -262,43 +262,7 @@ fun CreateAccountScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                Text(
-                    stringResource(id = R.string.or_continue_with),
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            OutlinedButton(
-                onClick = {
-                    val profile = com.example.herbhopper_v1.data.UserProfile(
-                        uid = "dummy_uid_patient",
-                        name = "David G.",
-                        email = "david.g@gmail.com",
-                        role = "PATIENT"
-                    )
-                    profileViewModel.saveProfile(profile)
-                    onSignUpSuccess()
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                border = ButtonDefaults.outlinedButtonBorder.copy(brush = Brush.linearGradient(listOf(MaterialTheme.colorScheme.outline.copy(0.2f), MaterialTheme.colorScheme.outline.copy(0.2f))))
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(24.dp).background(Color.Red, CircleShape))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(stringResource(id = R.string.signup_google), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
-                }
-            }
 
             Spacer(modifier = Modifier.height(32.dp))
 

@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+node_modules/
+back-herb-hopper/node_modules/

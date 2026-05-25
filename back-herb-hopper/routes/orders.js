@@ -5,8 +5,8 @@ const pool = require('../db');
 // Obtener todas las ordenes
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM orders');
-        res.json(rows);
+        const result = await pool.query('SELECT * FROM orders');
+        res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
     const { orderId, userId, userName, itemsJson, totalAmount, status, timestamp, address, paymentMethod } = req.body;
     try {
         await pool.query(
-            'INSERT INTO orders (orderId, userId, userName, itemsJson, totalAmount, status, timestamp, address, paymentMethod) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO orders ("orderId", "userId", "userName", "itemsJson", "totalAmount", status, timestamp, address, "paymentMethod") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
             [orderId, userId, userName, itemsJson, totalAmount, status || 'PENDING', timestamp, address, paymentMethod]
         );
         res.status(201).json({ message: 'Orden creada' });
@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
 router.put('/:orderId/status', async (req, res) => {
     const { status } = req.body;
     try {
-        await pool.query('UPDATE orders SET status = ? WHERE orderId = ?', [status, req.params.orderId]);
+        await pool.query('UPDATE orders SET status = $1 WHERE "orderId" = $2', [status, req.params.orderId]);
         res.json({ message: 'Estado actualizado' });
     } catch (error) {
         res.status(500).json({ error: error.message });

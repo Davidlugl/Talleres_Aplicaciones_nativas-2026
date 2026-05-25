@@ -49,113 +49,7 @@ fun SecureAccessScreen(
     onSellerAccess: () -> Unit,
     profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var showGoogleSelector by remember { mutableStateOf(false) }
 
-    if (showGoogleSelector) {
-        AlertDialog(
-            onDismissRequest = { showGoogleSelector = false },
-            title = { 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(24.dp).background(Color.Red, CircleShape))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Continuar con Google", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Selecciona una cuenta para continuar a HerbHopper:", style = MaterialTheme.typography.bodyMedium)
-                    
-                    // Cuenta 1: Cliente / Paciente
-                    Card(
-                        onClick = {
-                            showGoogleSelector = false
-                            val profile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_patient",
-                                name = "David G.",
-                                email = "david.g@gmail.com",
-                                role = "PATIENT"
-                            )
-                            profileViewModel.saveProfile(profile)
-                            onGoogleLogin()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("D", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer) }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text("David G.", fontWeight = FontWeight.Bold)
-                                Text("david.g@gmail.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-
-                    // Cuenta 2: Vendedor
-                    Card(
-                        onClick = {
-                            showGoogleSelector = false
-                            val profile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_seller",
-                                name = "Vendedor Herb",
-                                email = "seller@herbhopper.com",
-                                role = "SELLER"
-                            )
-                            profileViewModel.saveProfile(profile)
-                            onSellerAccess()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("V", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer) }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text("Vendedor Herb", fontWeight = FontWeight.Bold)
-                                Text("seller@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-
-                    // Cuenta 3: Administrador / Desarrollador
-                    Card(
-                        onClick = {
-                            showGoogleSelector = false
-                            val profile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_admin",
-                                name = "HerbHopper Dev",
-                                email = "dev@herbhopper.com",
-                                role = "ADMIN"
-                            )
-                            profileViewModel.saveProfile(profile)
-                            onAdminAccess()
-                        },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = CircleShape, modifier = Modifier.size(40.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text("H", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer) }
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text("HerbHopper Dev", fontWeight = FontWeight.Bold)
-                                Text("dev@herbhopper.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showGoogleSelector = false }) { Text("Cancelar") }
-            }
-        )
-    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -229,39 +123,7 @@ fun SecureAccessScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
-                        // Google Login
-                        Button(
-                            onClick = { showGoogleSelector = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Google Logo Placeholder
-                                Box(modifier = Modifier.size(20.dp).background(Color.Red, CircleShape))
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(stringResource(id = R.string.continue_with_google), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
-                            }
-                        }
 
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                            Text(
-                                stringResource(id = R.string.other_options),
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Bold
-                            )
-                            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
 
                         // Email Login Option
                         AccessOption(
