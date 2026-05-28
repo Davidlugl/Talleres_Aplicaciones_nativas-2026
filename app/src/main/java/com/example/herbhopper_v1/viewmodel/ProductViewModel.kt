@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
 
 class ProductViewModel(application: Application) : AndroidViewModel(application) {
     private val productDao: ProductDao = AppDatabase.getDatabase(application).productDao()
@@ -57,6 +59,7 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         seedDatabase()
+        refreshProductsFromBackend()
     }
 
     private fun seedDatabase() {
@@ -115,9 +118,54 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun refreshProductsFromBackend() {
+        viewModelScope.launch {
+            try {
+                val networkProducts = com.example.herbhopper_v1.data.network.ApiService.instance.getProducts()
+                if (networkProducts.isNotEmpty()) {
+                    networkProducts.forEach { networkProd ->
+                        productDao.insertProduct(networkProd)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun uploadProductImage(context: android.content.Context, uri: android.net.Uri, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val contentResolver = context.contentResolver
+                val inputStream = contentResolver.openInputStream(uri) ?: throw java.io.IOException("No se pudo abrir el stream")
+                val tempFile = java.io.File.createTempFile("upload_", ".jpg", context.cacheDir)
+                tempFile.outputStream().use { output ->
+                    inputStream.copyTo(output)
+                }
+                
+                val mediaType = "image/*".toMediaTypeOrNull()
+                val requestFile = tempFile.asRequestBody(mediaType)
+                val body = okhttp3.MultipartBody.Part.createFormData("image", tempFile.name, requestFile)
+                
+                val response = com.example.herbhopper_v1.data.network.ApiService.instance.uploadImage(body)
+                tempFile.delete()
+                onResult(response.url)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(null)
+            }
+        }
+    }
+
     fun insert(product: Product) {
         viewModelScope.launch {
-            productDao.insertProduct(product)
+            try {
+                val createdProduct = com.example.herbhopper_v1.data.network.ApiService.instance.createProduct(product)
+                productDao.insertProduct(createdProduct)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                productDao.insertProduct(product)
+            }
         }
     }
 

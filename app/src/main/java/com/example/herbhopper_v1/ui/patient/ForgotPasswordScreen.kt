@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.theme.*
+import kotlinx.coroutines.launch
 
 /**
  * Pantalla para recuperar la contraseña del paciente (Olvidó su contraseña).
@@ -30,6 +31,9 @@ import com.example.herbhopper_v1.ui.theme.*
 fun ForgotPasswordScreen(onBack: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var isSubmitted by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -93,12 +97,30 @@ fun ForgotPasswordScreen(onBack: () -> Unit) {
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
-                        onClick = { isSubmitted = true },
+                        onClick = {
+                            isLoading = true
+                            scope.launch {
+                                try {
+                                    com.example.herbhopper_v1.data.network.ApiService.instance.forgotPassword(
+                                        com.example.herbhopper_v1.data.network.ForgotPasswordRequest(email.trim())
+                                    )
+                                    isLoading = false
+                                    isSubmitted = true
+                                } catch (e: Exception) {
+                                    isLoading = false
+                                    android.widget.Toast.makeText(context, "Error: ${e.localizedMessage}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        enabled = email.isNotBlank()
+                        enabled = email.isNotBlank() && !isLoading
                     ) {
-                        Text(stringResource(id = R.string.send_link_btn), fontWeight = FontWeight.Bold)
+                        if (isLoading) {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(stringResource(id = R.string.send_link_btn), fontWeight = FontWeight.Bold)
+                        }
                     }
                 } else {
                     Card(

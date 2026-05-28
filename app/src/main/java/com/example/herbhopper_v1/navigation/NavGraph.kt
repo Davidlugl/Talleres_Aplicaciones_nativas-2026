@@ -277,7 +277,10 @@ fun NavGraph(navController: NavHostController) {
             )
         }
         composable("user_management") {
-            UserManagementScreen(onBack = { navController.popBackStack() })
+            UserManagementScreen(
+                onBack = { navController.popBackStack() },
+                onNavigate = { navController.navigate(it) }
+            )
         }
         composable("audit_panel") { 
             AuditPanelScreen(onNavigate = { navController.navigate(it) }) 

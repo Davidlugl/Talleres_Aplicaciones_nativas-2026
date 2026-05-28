@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Store
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -43,34 +46,14 @@ fun CreateAccountScreen(
     profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
-    var showProfileModal by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var selectedRole by remember { mutableStateOf("PATIENT") }
 
     // Solución al Issue 1: Declarar variables de estado local para los campos del formulario
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-
-    if (showProfileModal) {
-        AlertDialog(
-            onDismissRequest = { showProfileModal = false },
-            title = { Text(stringResource(id = R.string.select_profile_register_title), fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(id = R.string.role_patient))
-                    }
-                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)) {
-                        Text(stringResource(id = R.string.role_seller))
-                    }
-                    Button(onClick = { showProfileModal = false }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)) {
-                        Text(stringResource(id = R.string.role_admin))
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { showProfileModal = false }) { Text(stringResource(id = R.string.close_btn)) } }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -109,13 +92,45 @@ fun CreateAccountScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
-                text = stringResource(id = R.string.create_account),
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                letterSpacing = (-1).sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = stringResource(id = R.string.create_account),
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    letterSpacing = (-1).sp,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                val roleDisplay = when(selectedRole) {
+                    "SELLER" -> "Vendedor"
+                    "ADMIN" -> "Admin"
+                    else -> "Paciente"
+                }
+                val roleColor = when(selectedRole) {
+                    "SELLER" -> MaterialTheme.colorScheme.secondary
+                    "ADMIN" -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.primary
+                }
+                
+                Surface(
+                    color = roleColor.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, roleColor)
+                ) {
+                    Text(
+                        text = roleDisplay,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = roleColor
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(id = R.string.create_account_subtitle),
@@ -123,7 +138,104 @@ fun CreateAccountScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "¿Cómo deseas registrarte?",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Option 1: Comprador (PATIENT)
+                val isPatientSelected = selectedRole == "PATIENT"
+                val buyerColor = MaterialTheme.colorScheme.primary
+                Surface(
+                    onClick = { selectedRole = "PATIENT" },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isPatientSelected) buyerColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = if (isPatientSelected) 2.dp else 1.dp,
+                        color = if (isPatientSelected) buyerColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = null,
+                            tint = if (isPatientSelected) buyerColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Comprador",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isPatientSelected) buyerColor else MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Adquiere productos",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+
+                // Option 2: Vendedor (SELLER)
+                val isSellerSelected = selectedRole == "SELLER"
+                val sellerColor = MaterialTheme.colorScheme.secondary
+                Surface(
+                    onClick = { selectedRole = "SELLER" },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isSellerSelected) sellerColor.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = if (isSellerSelected) 2.dp else 1.dp,
+                        color = if (isSellerSelected) sellerColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Store,
+                            contentDescription = null,
+                            tint = if (isSellerSelected) sellerColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Vendedor",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isSellerSelected) sellerColor else MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Gestiona inventario",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Solución al Issue 1: Vincular los campos de texto a variables de estado mutable
             OutlinedTextField(
@@ -208,42 +320,29 @@ fun CreateAccountScreen(
                     } else {
                         val prefixVal = context.getString(R.string.colombia_prefix)
                         val formattedPhone = "$prefixVal$cleanPhone"
-                        val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
-                        if (auth != null && password.isNotBlank()) {
-                            auth.createUserWithEmailAndPassword(email, password)
-                                .addOnCompleteListener { task ->
-                                    val uid = auth.currentUser?.uid ?: "dummy_uid_patient"
-                                    val newProfile = com.example.herbhopper_v1.data.UserProfile(
-                                        uid = uid,
-                                        name = fullName,
-                                        email = email,
-                                        phone = formattedPhone,
-                                        role = "PATIENT"
-                                    )
-                                    profileViewModel.saveProfile(newProfile)
-                                    onSignUpSuccess()
-                                }
-                                .addOnFailureListener {
-                                    val newProfile = com.example.herbhopper_v1.data.UserProfile(
-                                        uid = "dummy_uid_patient",
-                                        name = fullName,
-                                        email = email,
-                                        phone = formattedPhone,
-                                        role = "PATIENT"
-                                    )
-                                    profileViewModel.saveProfile(newProfile)
-                                    onSignUpSuccess()
-                                }
-                        } else {
-                            val newProfile = com.example.herbhopper_v1.data.UserProfile(
-                                uid = "dummy_uid_patient",
+                        scope.launch {
+                            val result = profileViewModel.registerToBackend(
                                 name = fullName,
-                                email = email,
-                                phone = formattedPhone,
-                                role = "PATIENT"
+                                email = lowercaseEmail,
+                                password = password,
+                                role = selectedRole
                             )
-                            profileViewModel.saveProfile(newProfile)
-                            onSignUpSuccess()
+                            if (result.isSuccess) {
+                                val profile = result.getOrNull()
+                                if (profile != null) {
+                                    val updatedProfile = profile.copy(phone = formattedPhone)
+                                    profileViewModel.saveProfile(updatedProfile)
+                                }
+                                onSignUpSuccess()
+                            } else {
+                                val error = result.exceptionOrNull()
+                                val errorMessage = error?.message ?: ""
+                                if (errorMessage.contains("400") || errorMessage.contains("registrado", ignoreCase = true)) {
+                                    Toast.makeText(context, "El correo electrónico ya está registrado", Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(context, "Error al registrarse. Revisa tu conexión.", Toast.LENGTH_LONG).show()
+                                }
+                            }
                         }
                     }
                 },
@@ -278,17 +377,7 @@ fun CreateAccountScreen(
                 )
             }
 
-            TextButton(
-                onClick = { showProfileModal = true },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
-                Text(
-                    text = stringResource(id = R.string.change_register_profile),
-                    color = MaterialTheme.colorScheme.secondary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
-            }
+            // Las opciones de rol se presentan de manera integrada en el formulario para una mejor experiencia de usuario.
 
             Spacer(modifier = Modifier.height(64.dp))
 

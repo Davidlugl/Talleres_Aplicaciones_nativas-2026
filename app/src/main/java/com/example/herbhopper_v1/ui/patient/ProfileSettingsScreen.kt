@@ -77,9 +77,7 @@ fun PaymentSettings() {
     val context = LocalContext.current
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
-    val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
-    val currentUser = auth?.currentUser
-    val uid = currentUser?.uid ?: "dummy_uid_patient"
+    val uid = com.example.herbhopper_v1.data.SessionManager.getUid()
 
     var showDialog by remember { mutableStateOf(false) }
     var cardNumber by remember { mutableStateOf("") }
@@ -135,13 +133,13 @@ fun PaymentSettings() {
                         return@Button
                     }
 
-                    val method = "**** **** **** ${cardNumber.takeLast(4)}"
-                    val updated = profileFromDb?.copy(paymentMethod = method) ?: com.example.herbhopper_v1.data.UserProfile(
+                    val formattedMethod = "Tarjeta **** " + cardNumber.takeLast(4)
+                    val updated = profileFromDb?.copy(paymentMethod = formattedMethod) ?: com.example.herbhopper_v1.data.UserProfile(
                         uid = uid,
-                        name = currentUser?.displayName ?: "Usuario",
-                        email = currentUser?.email ?: "",
+                        name = com.example.herbhopper_v1.data.SessionManager.getName().ifEmpty { "Usuario" },
+                        email = com.example.herbhopper_v1.data.SessionManager.getEmail(),
                         role = "PATIENT",
-                        paymentMethod = method
+                        paymentMethod = formattedMethod
                     )
                     viewModel.saveProfile(updated)
                     Toast.makeText(context, context.getString(R.string.toast_payment_method_saved), Toast.LENGTH_SHORT).show()
@@ -191,9 +189,7 @@ fun AddressSettings() {
     val context = LocalContext.current
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
-    val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
-    val currentUser = auth?.currentUser
-    val uid = currentUser?.uid ?: "dummy_uid_patient"
+    val uid = com.example.herbhopper_v1.data.SessionManager.getUid()
 
     var showDialog by remember { mutableStateOf(false) }
     var addressText by remember { mutableStateOf("") }
@@ -219,8 +215,8 @@ fun AddressSettings() {
                     if (addressText.isNotBlank()) {
                         val updated = profileFromDb?.copy(address = addressText) ?: com.example.herbhopper_v1.data.UserProfile(
                             uid = uid,
-                            name = currentUser?.displayName ?: "Usuario",
-                            email = currentUser?.email ?: "",
+                            name = com.example.herbhopper_v1.data.SessionManager.getName().ifEmpty { "Usuario" },
+                            email = com.example.herbhopper_v1.data.SessionManager.getEmail(),
                             role = "PATIENT",
                             address = addressText
                         )
@@ -277,9 +273,7 @@ fun AccountSettings() {
     val context = LocalContext.current
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
-    val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
-    val currentUser = auth?.currentUser
-    val uid = currentUser?.uid ?: "dummy_uid_patient"
+    val uid = com.example.herbhopper_v1.data.SessionManager.getUid()
 
     val profileFromDb by viewModel.observeProfile(uid).collectAsState(initial = null)
 

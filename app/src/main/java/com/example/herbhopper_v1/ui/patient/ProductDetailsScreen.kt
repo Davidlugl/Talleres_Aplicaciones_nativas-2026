@@ -84,8 +84,9 @@ fun ProductDetailsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             val context = androidx.compose.ui.platform.LocalContext.current
+            val isWebUrl = product.imageUrl?.startsWith("http") == true
             val imageResId = remember(product.imageUrl) {
-                if (!product.imageUrl.isNullOrEmpty()) {
+                if (!product.imageUrl.isNullOrEmpty() && !isWebUrl) {
                     context.resources.getIdentifier(product.imageUrl, "drawable", context.packageName)
                 } else {
                     0
@@ -101,7 +102,14 @@ fun ProductDetailsScreen(
                     .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                if (imageResId != 0) {
+                if (isWebUrl) {
+                    coil.compose.AsyncImage(
+                        model = product.imageUrl,
+                        contentDescription = product.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else if (imageResId != 0) {
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(id = imageResId),
                         contentDescription = product.name,

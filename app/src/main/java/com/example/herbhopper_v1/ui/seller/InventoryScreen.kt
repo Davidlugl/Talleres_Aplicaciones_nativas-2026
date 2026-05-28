@@ -96,8 +96,9 @@ fun InventoryScreen(
 @Composable
 fun InventoryCard(item: Product, onEdit: (Int) -> Unit, onDelete: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isWebUrl = item.imageUrl?.startsWith("http") == true
     val imageResId = remember(item.imageUrl) {
-        if (!item.imageUrl.isNullOrEmpty()) {
+        if (!item.imageUrl.isNullOrEmpty() && !isWebUrl) {
             context.resources.getIdentifier(item.imageUrl, "drawable", context.packageName)
         } else {
             0
@@ -120,7 +121,14 @@ fun InventoryCard(item: Product, onEdit: (Int) -> Unit, onDelete: () -> Unit) {
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                if (imageResId != 0) {
+                if (isWebUrl) {
+                    coil.compose.AsyncImage(
+                        model = item.imageUrl,
+                        contentDescription = item.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else if (imageResId != 0) {
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(id = imageResId),
                         contentDescription = item.name,

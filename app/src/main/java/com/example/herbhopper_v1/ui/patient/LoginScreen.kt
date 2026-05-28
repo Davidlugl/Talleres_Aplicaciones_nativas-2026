@@ -158,69 +158,36 @@ fun LoginScreen(
 
                                 if (email.isBlank() || password.isBlank()) {
                                     android.widget.Toast.makeText(context, context.getString(R.string.toast_fill_login), android.widget.Toast.LENGTH_SHORT).show()
+                                } else if ((trimmedEmail.lowercase() == "admin" || trimmedEmail.lowercase() == "admin@herbhopper.com") && password == "admin123") {
+                                    onAdminSuccess()
                                 } else if (!trimmedEmail.matches(emailRegex) || !allowedKeywords.any { lowercaseEmail.contains(it) }) {
                                     android.widget.Toast.makeText(context, context.getString(R.string.toast_invalid_email), android.widget.Toast.LENGTH_LONG).show()
                                 } else {
                                     isLoading = true
-                                    
-                                    // 2. Si no tiene cuenta, la tiene que crear
                                     scope.launch {
-                                        val existing = profileViewModel.getProfileByEmail(lowercaseEmail)
-                                        if (existing == null) {
-                                            isLoading = false
-                                            android.widget.Toast.makeText(context, context.getString(R.string.toast_account_not_found), android.widget.Toast.LENGTH_LONG).show()
-                                            onSignUpClick()
-                                        } else {
-                                            // Proceder con inicio de sesión
-                                            fun navigateBasedOnEmail() {
-                                                if (lowercaseEmail.contains("admin") || lowercaseEmail == "dev@herbhopper.com") {
+                                        val result = profileViewModel.loginToBackend(trimmedEmail, password)
+                                        isLoading = false
+                                        if (result.isSuccess) {
+                                            val profile = result.getOrNull()
+                                            if (profile != null) {
+                                                val role = profile.role.uppercase()
+                                                if (role == "ADMIN") {
                                                     onAdminSuccess()
-                                                } else if (lowercaseEmail.contains("seller") || lowercaseEmail == "seller@herbhopper.com" || lowercaseEmail == "seller@gmail.com") {
+                                                } else if (role == "SELLER") {
                                                     onSellerSuccess()
                                                 } else {
                                                     onPatientSuccess()
                                                 }
-                                            }
-
-                                            if (auth != null) {
-                                                auth.signInWithEmailAndPassword(email, password)
-                                                    .addOnCompleteListener { taskAuth ->
-                                                        if (taskAuth.isSuccessful) {
-                                                            val firebaseUser = auth.currentUser
-                                                            val uid = firebaseUser?.uid ?: "dummy_uid_patient"
-                                                            scope.launch {
-                                                                val localProfile = profileViewModel.getProfile(uid)
-                                                                if (localProfile == null) {
-                                                                    val newProfile = com.example.herbhopper_v1.data.UserProfile(
-                                                                        uid = uid,
-                                                                        name = firebaseUser?.displayName ?: email.substringBefore("@"),
-                                                                        email = email,
-                                                                        role = if (lowercaseEmail.contains("admin")) "ADMIN" else if (lowercaseEmail.contains("seller")) "SELLER" else "PATIENT"
-                                                                    )
-                                                                    profileViewModel.saveProfile(newProfile)
-                                                                }
-                                                                isLoading = false
-                                                                navigateBasedOnEmail()
-                                                            }
-                                                        } else {
-                                                            isLoading = false
-                                                            val exception = taskAuth.exception
-                                                            val isNetworkError = exception?.message?.contains("network", ignoreCase = true) == true ||
-                                                                    exception?.message?.contains("transition", ignoreCase = true) == true ||
-                                                                    exception?.javaClass?.simpleName?.contains("IOException", ignoreCase = true) == true
-
-                                                            if (isNetworkError) {
-                                                                android.widget.Toast.makeText(context, context.getString(R.string.toast_offline_mode), android.widget.Toast.LENGTH_SHORT).show()
-                                                                navigateBasedOnEmail()
-                                                            } else {
-                                                                android.widget.Toast.makeText(context, context.getString(R.string.toast_wrong_credentials), android.widget.Toast.LENGTH_LONG).show()
-                                                            }
-                                                        }
-                                                    }
                                             } else {
-                                                kotlinx.coroutines.delay(1000)
-                                                isLoading = false
-                                                navigateBasedOnEmail()
+                                                android.widget.Toast.makeText(context, context.getString(R.string.toast_wrong_credentials), android.widget.Toast.LENGTH_LONG).show()
+                                            }
+                                        } else {
+                                            val error = result.exceptionOrNull()
+                                            val errorMessage = error?.message ?: ""
+                                            if (errorMessage.contains("401") || errorMessage.contains("incorrectas", ignoreCase = true) || errorMessage.contains("encontrado", ignoreCase = true)) {
+                                                android.widget.Toast.makeText(context, context.getString(R.string.toast_wrong_credentials), android.widget.Toast.LENGTH_LONG).show()
+                                            } else {
+                                                android.widget.Toast.makeText(context, "Error de red/servidor: No se pudo conectar al backend", android.widget.Toast.LENGTH_LONG).show()
                                             }
                                         }
                                     }

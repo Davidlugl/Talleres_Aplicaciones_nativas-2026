@@ -198,8 +198,9 @@ fun SellerDashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val context = androidx.compose.ui.platform.LocalContext.current
+                            val isWebUrl = product.imageUrl?.startsWith("http") == true
                             val imageResId = remember(product.imageUrl) {
-                                if (!product.imageUrl.isNullOrEmpty()) {
+                                if (!product.imageUrl.isNullOrEmpty() && !isWebUrl) {
                                     context.resources.getIdentifier(product.imageUrl, "drawable", context.packageName)
                                 } else {
                                     0
@@ -212,7 +213,14 @@ fun SellerDashboardScreen(
                                     .background(MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
-                                if (imageResId != 0) {
+                                if (isWebUrl) {
+                                    coil.compose.AsyncImage(
+                                        model = product.imageUrl,
+                                        contentDescription = product.name,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                } else if (imageResId != 0) {
                                     androidx.compose.foundation.Image(
                                         painter = androidx.compose.ui.res.painterResource(id = imageResId),
                                         contentDescription = product.name,
@@ -258,8 +266,9 @@ fun SellerDashboardScreen(
 @Composable
 fun StockAlertItem(name: String, details: String, units: String, isCritical: Boolean, imageUrl: String? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isWebUrl = imageUrl?.startsWith("http") == true
     val imageResId = remember(imageUrl) {
-        if (!imageUrl.isNullOrEmpty()) {
+        if (!imageUrl.isNullOrEmpty() && !isWebUrl) {
             context.resources.getIdentifier(imageUrl, "drawable", context.packageName)
         } else {
             0
@@ -273,7 +282,14 @@ fun StockAlertItem(name: String, details: String, units: String, isCritical: Boo
         Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp), modifier = Modifier.size(40.dp)) {
                 Box(contentAlignment = Alignment.Center) {
-                    if (imageResId != 0) {
+                    if (isWebUrl) {
+                        coil.compose.AsyncImage(
+                            model = imageUrl,
+                            contentDescription = name,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else if (imageResId != 0) {
                         androidx.compose.foundation.Image(
                             painter = androidx.compose.ui.res.painterResource(id = imageResId),
                             contentDescription = name,

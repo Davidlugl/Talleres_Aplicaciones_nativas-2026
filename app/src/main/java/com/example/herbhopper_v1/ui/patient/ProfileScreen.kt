@@ -48,10 +48,7 @@ fun ProfileScreen(
     onOptionClick: (String) -> Unit = {},
     viewModel: ProfileViewModel = viewModel()
 ) {
-    // Manejo seguro de Firebase para evitar crashes si no está inicializado o no hay sesión
-    val auth = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
-    val currentUser = auth?.currentUser
-    val uid = currentUser?.uid ?: "dummy_uid_patient"
+    val uid = com.example.herbhopper_v1.data.SessionManager.getUid()
     
     // Solución al Issue 3: Envolver la suscripción al Flow en produceState para evitar
     // recrear la suscripción en cada recomposición y prevenir fugas de memoria.
@@ -137,7 +134,10 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = onLogout,
+                onClick = {
+                    com.example.herbhopper_v1.data.SessionManager.logout()
+                    onLogout()
+                },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)

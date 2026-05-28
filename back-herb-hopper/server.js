@@ -21,6 +21,7 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/products', require('./routes/products'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/upload', require('./routes/upload'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

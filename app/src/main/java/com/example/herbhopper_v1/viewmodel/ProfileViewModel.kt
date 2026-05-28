@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.herbhopper_v1.data.AppDatabase
 import com.example.herbhopper_v1.data.UserProfile
 import com.example.herbhopper_v1.data.UserDao
+import com.example.herbhopper_v1.data.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
@@ -98,5 +99,50 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     suspend fun getProfileByEmail(email: String): UserProfile? {
         return userDao.getUserProfileByEmail(email)
+    }
+
+    suspend fun loginToBackend(email: String, password: String): Result<UserProfile> {
+        return try {
+            val response = com.example.herbhopper_v1.data.network.ApiService.instance.login(
+                com.example.herbhopper_v1.data.network.LoginRequest(email.trim().lowercase(), password)
+            )
+            val user = response.user
+            val profile = UserProfile(
+                uid = user.id,
+                name = user.name,
+                email = user.email,
+                role = user.role
+            )
+            userDao.insertProfile(profile)
+            SessionManager.login(profile.uid, profile.email, profile.name, profile.role)
+            Result.success(profile)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun registerToBackend(name: String, email: String, password: String, role: String = "PATIENT"): Result<UserProfile> {
+        return try {
+            val response = com.example.herbhopper_v1.data.network.ApiService.instance.register(
+                com.example.herbhopper_v1.data.network.RegisterRequest(
+                    name = name,
+                    email = email.trim().lowercase(),
+                    password = password,
+                    role = role
+                )
+            )
+            val user = response.user
+            val profile = UserProfile(
+                uid = user.id,
+                name = user.name,
+                email = user.email,
+                role = user.role
+            )
+            userDao.insertProfile(profile)
+            SessionManager.login(profile.uid, profile.email, profile.name, profile.role)
+            Result.success(profile)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
