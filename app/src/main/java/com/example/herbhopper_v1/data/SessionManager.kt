@@ -44,7 +44,7 @@ object SessionManager {
     }
 
     fun getUid(): String {
-        return preferences?.getString(KEY_UID, null) ?: "dummy_uid_patient"
+        return preferences?.getString(KEY_UID, null) ?: ""
     }
 
     fun getEmail(): String {

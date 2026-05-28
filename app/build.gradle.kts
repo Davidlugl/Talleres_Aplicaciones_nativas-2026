@@ -21,6 +21,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "EPAYCO_PUBLIC_KEY", "\"2c9d14c13dc6fe024fa7b30631344783\"")
+        buildConfigField("String", "EPAYCO_PRIVATE_KEY", "\"TU_LLAVE_PRIVADA_EPAYCO\"")
     }
 
     buildTypes {
@@ -41,6 +44,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -53,6 +57,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
@@ -66,6 +71,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.play.services.auth)
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -73,7 +79,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("androidx.biometric:biometric:1.1.0")
 
     // CameraX
     val cameraXVersion = "1.3.4"

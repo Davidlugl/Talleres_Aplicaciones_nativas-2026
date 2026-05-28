@@ -1,6 +1,9 @@
 package com.example.herbhopper_v1.ui.patient
 
+import android.Manifest
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -17,11 +21,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.herbhopper_v1.R
+import com.example.herbhopper_v1.data.DeliveryAddress
+import com.example.herbhopper_v1.data.SessionManager
+import com.example.herbhopper_v1.viewmodel.DeliveryAddressViewModel
+import com.example.herbhopper_v1.viewmodel.GpsState
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 /**
  * Pantalla General de Ajustes de Perfil (Profile Settings Screen).
@@ -180,85 +189,380 @@ fun PaymentSettings() {
 }
 
 /**
- * Formulario y gestión para los Ajustes de Direcciones de Entrega.
- * Permite al usuario registrar o actualizar su dirección principal mediante un diálogo,
- * editando la información existente o eliminándola de la base de datos persistente.
+ * Pantalla de gestión de Direcciones de Entrega.
+ *
+ * Permite al usuario:
+ * - Ver todas sus direcciones guardadas.
+ * - Agregar nuevas direcciones manualmente o usando su ubicación GPS actual.
+ * - Editar y eliminar direcciones existentes.
+ * - Marcar una dirección como predeterminada.
+ *
+ * Usa [DeliveryAddressViewModel] para el acceso a Room y el proveedor de ubicación.
  */
 @Composable
 fun AddressSettings() {
     val context = LocalContext.current
-    val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val addressVM: DeliveryAddressViewModel = viewModel()
+    val uid = SessionManager.getUid()
 
-    val uid = com.example.herbhopper_v1.data.SessionManager.getUid()
+    val addresses by addressVM.observeAddresses(uid).collectAsState(initial = emptyList())
+    val gpsState by addressVM.gpsState.collectAsState()
 
+    // ── Estado del diálogo ────────────────────────────────────────────────────
     var showDialog by remember { mutableStateOf(false) }
+    var editingAddress by remember { mutableStateOf<DeliveryAddress?>(null) }
+    var labelText by remember { mutableStateOf("") }
     var addressText by remember { mutableStateOf("") }
+    var isDefault by remember { mutableStateOf(false) }
+    var savedLat by remember { mutableStateOf<Double?>(null) }
+    var savedLon by remember { mutableStateOf<Double?>(null) }
 
-    val profileFromDb by viewModel.observeProfile(uid).collectAsState(initial = null)
+    // ── Launcher de permisos de ubicación ─────────────────────────────────────
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            addressVM.fetchCurrentLocation()
+        } else {
+            Toast.makeText(context, "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show()
+        }
+    }
 
+    // ── Cuando GPS retorna un resultado, pre-rellena el diálogo ───────────────
+    LaunchedEffect(gpsState) {
+        if (gpsState is GpsState.Success) {
+            val s = gpsState as GpsState.Success
+            addressText = s.addressText
+            savedLat = s.latitude
+            savedLon = s.longitude
+        } else if (gpsState is GpsState.Error) {
+            Toast.makeText(context, (gpsState as GpsState.Error).message, Toast.LENGTH_LONG).show()
+            addressVM.resetGpsState()
+        }
+    }
+
+    // ── Diálogo Agregar / Editar ──────────────────────────────────────────────
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(stringResource(id = R.string.delivery_address_dialog_title)) },
+            onDismissRequest = {
+                showDialog = false
+                addressVM.resetGpsState()
+            },
+            title = {
+                Text(
+                    if (editingAddress == null) "Nueva dirección de entrega" else "Editar dirección",
+                    fontWeight = FontWeight.Bold
+                )
+            },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+
+                    // Etiqueta
+                    OutlinedTextField(
+                        value = labelText,
+                        onValueChange = { labelText = it },
+                        label = { Text("Etiqueta (ej. Casa, Trabajo)") },
+                        leadingIcon = { Icon(Icons.Default.Label, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+
+                    // Dirección completa
                     OutlinedTextField(
                         value = addressText,
-                        onValueChange = { addressText = it },
-                        label = { Text(stringResource(id = R.string.complete_address_label)) },
-                        modifier = Modifier.fillMaxWidth()
+                        onValueChange = {
+                            addressText = it
+                            // Si el usuario escribe manualmente, borramos las coords GPS
+                            savedLat = null
+                            savedLon = null
+                        },
+                        label = { Text("Dirección completa") },
+                        leadingIcon = { Icon(Icons.Default.Home, null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 3
                     )
+
+                    // Botón "Usar mi ubicación actual"
+                    OutlinedButton(
+                        onClick = {
+                            locationPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = gpsState !is GpsState.Loading
+                    ) {
+                        if (gpsState is GpsState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Obteniendo ubicación...")
+                        } else {
+                            Icon(Icons.Default.MyLocation, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Usar mi ubicación actual")
+                        }
+                    }
+
+                    // Coordenadas mostradas si se obtuvo GPS
+                    if (savedLat != null && savedLon != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                "GPS: ${"%.4f".format(savedLat)}, ${
+                                    "%.4f".format(savedLon)
+                                }",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // Predeterminada
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Establecer como predeterminada", style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = isDefault,
+                            onCheckedChange = { isDefault = it }
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (addressText.isNotBlank()) {
-                        val updated = profileFromDb?.copy(address = addressText) ?: com.example.herbhopper_v1.data.UserProfile(
+                Button(
+                    onClick = {
+                        val lbl = labelText.ifBlank { "Dirección" }
+                        if (addressText.isBlank()) {
+                            Toast.makeText(context, "Ingresa una dirección", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        val addr = editingAddress?.copy(
+                            label = lbl,
+                            fullAddress = addressText,
+                            latitude = savedLat,
+                            longitude = savedLon,
+                            isDefault = isDefault
+                        ) ?: DeliveryAddress(
                             uid = uid,
-                            name = com.example.herbhopper_v1.data.SessionManager.getName().ifEmpty { "Usuario" },
-                            email = com.example.herbhopper_v1.data.SessionManager.getEmail(),
-                            role = "PATIENT",
-                            address = addressText
+                            label = lbl,
+                            fullAddress = addressText,
+                            latitude = savedLat,
+                            longitude = savedLon,
+                            isDefault = isDefault
                         )
-                        viewModel.saveProfile(updated)
+                        addressVM.saveAddress(addr)
                         Toast.makeText(context, "Dirección guardada", Toast.LENGTH_SHORT).show()
                         showDialog = false
-                        addressText = ""
+                        addressVM.resetGpsState()
                     }
-                }) { Text(stringResource(id = R.string.save_btn)) }
+                ) { Text("Guardar") }
             },
-            dismissButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.cancel_btn)) } }
+            dismissButton = {
+                TextButton(onClick = {
+                    showDialog = false
+                    addressVM.resetGpsState()
+                }) { Text("Cancelar") }
+            }
         )
     }
 
+    // ── Lista de direcciones ──────────────────────────────────────────────────
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(id = R.string.delivery_addresses_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(
+            "Direcciones de entrega",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
 
-        profileFromDb?.address?.let { addr ->
-            SettingItem(
-                title = stringResource(id = R.string.main_address_label),
-                subtitle = addr,
-                icon = Icons.Default.Home,
-                onEdit = {
-                    addressText = addr
-                    showDialog = true
-                },
-                onDelete = {
-                    profileFromDb?.let { profile ->
-                        val updated = profile.copy(address = null)
-                        viewModel.saveProfile(updated)
+        if (addresses.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(24.dp)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.LocationOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "No tienes direcciones guardadas",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else {
+            addresses.forEach { addr ->
+                DeliveryAddressCard(
+                    address = addr,
+                    onEdit = {
+                        editingAddress = addr
+                        labelText = addr.label
+                        addressText = addr.fullAddress
+                        isDefault = addr.isDefault
+                        savedLat = addr.latitude
+                        savedLon = addr.longitude
+                        showDialog = true
+                    },
+                    onDelete = { addressVM.deleteAddress(addr.id) },
+                    onSetDefault = { addressVM.setDefault(uid, addr.id) }
+                )
+            }
+        }
+
+        Button(
+            onClick = {
+                editingAddress = null
+                labelText = ""
+                addressText = ""
+                isDefault = addresses.isEmpty() // primera dirección = predeterminada automáticamente
+                savedLat = null
+                savedLon = null
+                addressVM.resetGpsState()
+                showDialog = true
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.AddLocationAlt, null)
+            Spacer(Modifier.width(8.dp))
+            Text("Agregar nueva dirección")
+        }
+    }
+}
+
+/**
+ * Tarjeta visual para una [DeliveryAddress] individual.
+ * Muestra etiqueta, dirección, badge GPS si tiene coordenadas, y acciones de
+ * edición, borrado y marcado como predeterminada.
+ */
+@Composable
+fun DeliveryAddressCard(
+    address: DeliveryAddress,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    onSetDefault: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (address.isDefault)
+                MaterialTheme.colorScheme.primaryContainer
+            else
+                MaterialTheme.colorScheme.surface
+        ),
+        border = if (address.isDefault)
+            androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+        else null
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = if (address.isDefault)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    address.label,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                if (address.isDefault) {
+                    Spacer(Modifier.weight(1f))
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.primary
+                    ) {
+                        Text(
+                            "Predeterminada",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
                     }
                 }
-            )
-        } ?: Text(stringResource(id = R.string.no_saved_addresses), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
 
-        Button(onClick = { addressText = ""; showDialog = true }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, null)
-            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                if (profileFromDb?.address == null) stringResource(id = R.string.add_new_address)
-                else stringResource(id = R.string.change_address)
+                address.fullAddress,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // Badge GPS si tiene coordenadas
+            if (address.latitude != null && address.longitude != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.GpsFixed,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        "GPS verificado",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!address.isDefault) {
+                    TextButton(onClick = onSetDefault) {
+                        Icon(Icons.Default.Star, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Predeterminar", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, null, tint = MaterialTheme.colorScheme.primary)
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error)
+                }
+            }
         }
     }
 }

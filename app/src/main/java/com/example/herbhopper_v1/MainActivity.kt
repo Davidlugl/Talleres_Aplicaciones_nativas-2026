@@ -1,8 +1,8 @@
 package com.example.herbhopper_v1
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -11,7 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.herbhopper_v1.navigation.NavGraph
 import com.example.herbhopper_v1.ui.theme.HerbHopperTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

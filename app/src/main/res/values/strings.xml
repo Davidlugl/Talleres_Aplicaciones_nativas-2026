@@ -26,6 +26,14 @@
     <string name="forgot_pin">¿Olvidó su PIN de seguridad?</string>
     <string name="version_info">Veridian Health Systems v4.2.0</string>
     <string name="clinical_security">Seguridad de Grado Clínico</string>
+    <string name="biometric_login_failed">Error al iniciar sesión con huella</string>
+    <string name="biometric_not_recognized">Huella no reconocida. Intenta de nuevo.</string>
+    <string name="biometric_dialog_title">Acceso con huella dactilar</string>
+    <string name="biometric_dialog_subtitle">Coloca tu dedo en el sensor para entrar a HerbHopper</string>
+    <string name="biometric_dialog_negative">Usar contraseña</string>
+    <string name="biometric_button_text">Entrar con huella dactilar</string>
+    <string name="network_server_error">Error de red/servidor: No se pudo conectar al backend</string>
+    <string name="no_account_register_here">¿No tienes cuenta? Regístrate aquí</string>
 
     <!-- Main Menu -->
     <string name="main_menu">Menú Principal</string>
@@ -217,6 +225,7 @@
     <string name="update_product">Actualizar Producto</string>
 
     <!-- Checkout -->
+    <!-- Checkout -->
     <string name="payment_gateway_title">Pasarela de Pago</string>
     <string name="payment_summary_title">Resumen de Pago</string>
     <string name="total_to_pay">Total a pagar</string>
@@ -231,6 +240,35 @@
     <string name="expiry_placeholder">MM/AA</string>
     <string name="cvv_label">CVV</string>
     <string name="cvv_placeholder">123</string>
+    <string name="card_data_title">Datos de la Tarjeta</string>
+    <string name="card_holder_info_title">Información del Titular</string>
+    <string name="card_holder_name_label">Nombre en la tarjeta</string>
+    <string name="card_holder_name_placeholder">NOMBRE APELLIDO</string>
+    <string name="buyer_phone_label">Celular</string>
+    <string name="buyer_phone_placeholder">3001234567</string>
+    <string name="buyer_doc_label">N° de Identificación (CC / CE)</string>
+    <string name="buyer_address_label">Dirección de facturación</string>
+    <string name="bank_transfer_info_text">Serás redirigido al portal PSE de tu banco para completar el pago. Una vez confirmado, recibirás la notificación y tu pedido será procesado.</string>
+    <string name="cash_info_text">Genera un cupón de pago y cancela en puntos Efecty, Baloto o corresponsales bancarios. El cupón tiene vigencia de 24 horas.</string>
+    <string name="order_reference_number">N° de referencia</string>
+    <string name="payment_method_pse_desc">Pago electrónico seguro</string>
+    <string name="payment_method_cash_desc">Efecty, Baloto, Corresponsales</string>
+    <string name="payment_method_card_desc">Visa, Mastercard, Amex · Débito</string>
+    <string name="technical_error_title">Error Técnico / Credenciales</string>
+    <string name="technical_error_desc">Esto ocurre comúnmente porque las claves de API (PUBLIC_KEY / PRIVATE_KEY) en EpaycoConfig son marcadores de posición (\'TU_LLAVE_PUBLICA_EPAYCO\'). Reemplácelas por sus credenciales reales en EpaycoConfig.kt para habilitar la comunicación real.</string>
+    <string name="clear_error_and_retry">Limpiar error y reintentar</string>
+    <string name="processing_payment">Procesando pago...</string>
+    <string name="pay_with_pse_btn">Pagar con PSE (ePayco)</string>
+    <string name="pay_with_card_btn">Pagar con Tarjeta (ePayco)</string>
+    <string name="pay_with_cash_btn">Realizar Pedido (Efectivo)</string>
+    <string name="payment_security_badge">Pago seguro · Certificado PCI DSS · Powered by ePayco</string>
+    <string name="payment_rejected_title">Pago Rechazado</string>
+    <string name="retry_other_details_btn">Reintentar con otros datos</string>
+    <string name="epayco_payment_title">Pago Seguro ePayco</string>
+    <string name="connecting_epayco">Conectando con ePayco...</string>
+    <string name="opening_epayco_secure">Abriendo portal de pagos seguro. Por favor, no cierre esta pantalla.</string>
+    <string name="epayco_portal_title">Pasarela de Pago ePayco</string>
+    <string name="order_epayco_title">Pedido HerbHopper</string>
 
     <!-- Forgot Password -->
     <string name="recover_password_title">Recuperar Contraseña</string>

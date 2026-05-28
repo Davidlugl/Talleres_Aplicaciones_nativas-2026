@@ -16,6 +16,7 @@ import com.example.herbhopper_v1.ui.seller.*
 import com.example.herbhopper_v1.viewmodel.CartViewModel
 import com.example.herbhopper_v1.viewmodel.OrderViewModel
 import com.example.herbhopper_v1.viewmodel.ProductViewModel
+import com.example.herbhopper_v1.viewmodel.TransactionStatus
 
 @Composable
 fun NavGraph(navController: NavHostController) {
@@ -24,6 +25,10 @@ fun NavGraph(navController: NavHostController) {
     val orderViewModel: OrderViewModel = viewModel()
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     val cartItems by cartViewModel.items.collectAsState()
+    // Estado del resultado de pago para pasarlo a la pantalla de confirmación
+    var lastPaymentStatus by remember { mutableStateOf<TransactionStatus>(TransactionStatus.Idle) }
+    var lastOrderId by remember { mutableStateOf("") }
+    var lastOrderAmount by remember { mutableStateOf(0.0) }
 
     NavHost(
         navController = navController,
@@ -117,44 +122,134 @@ fun NavGraph(navController: NavHostController) {
             ) 
         }
         composable("checkout") {
+            val total = cartItems.sumOf { it.product.price * it.quantity }
+            val orderId = remember { "ORD-${(1000..9999).random()}-${System.currentTimeMillis() % 10000}" }
+            val description = remember {
+                cartItems.take(2).joinToString(", ") { it.product.name }.let {
+                    if (cartItems.size > 2) "$it y ${cartItems.size - 2} más" else it
+                }.ifBlank { "Pedido HerbHopper" }
+            }
+
             CheckoutScreen(
-                totalAmount = cartItems.sumOf { it.product.price * it.quantity },
-                onBack = { navController.popBackStack() },
-                onPaymentSuccess = {
-                    if (cartItems.isNotEmpty()) {
-                        // 1. Convertir los items del carrito al formato simplificado de OrderItem
-                        val orderItems = cartItems.map { cartItem ->
-                            com.example.herbhopper_v1.data.OrderItem(
-                                productId = cartItem.product.id,
-                                productName = cartItem.product.name,
-                                quantity = cartItem.quantity,
-                                price = cartItem.product.price
+                totalAmount      = total,
+                orderId          = orderId,
+                orderDescription = description,
+                onBack           = { navController.popBackStack() },
+                onPaymentResult  = { status ->
+                    // 1. Guardar estado para pasarlo a la pantalla de confirmación
+                    lastPaymentStatus = status
+                    lastOrderId       = orderId
+                    lastOrderAmount   = total
+
+                    // 2. Persistir la orden solo si el pago fue exitoso o pendiente (como el Efectivo)
+                    if (status is TransactionStatus.Accepted || status is TransactionStatus.Pending) {
+                        if (cartItems.isNotEmpty()) {
+                            val orderItems = cartItems.map { cartItem ->
+                                com.example.herbhopper_v1.data.OrderItem(
+                                    productId   = cartItem.product.id,
+                                    productName = cartItem.product.name,
+                                    quantity    = cartItem.quantity,
+                                    price       = cartItem.product.price
+                                )
+                            }
+                            val itemsJson = com.google.gson.Gson().toJson(orderItems)
+                            val paymentKey = when (status) {
+                                is TransactionStatus.Accepted -> "CREDIT_CARD"
+                                is TransactionStatus.Pending  -> "CASH"
+                                else                          -> "UNKNOWN"
+                            }
+                            val newOrder = com.example.herbhopper_v1.data.Order(
+                                orderId       = orderId,
+                                userId        = "david_g",
+                                userName      = "David G.",
+                                itemsJson     = itemsJson,
+                                totalAmount   = total,
+                                status        = "PENDING",
+                                timestamp     = System.currentTimeMillis(),
+                                address       = "Bogotá, Colombia",
+                                paymentMethod = paymentKey
                             )
+                            orderViewModel.placeOrder(newOrder)
                         }
-                        val itemsJson = com.google.gson.Gson().toJson(orderItems)
-                        
-                        // 2. Construir la Orden
-                        val orderId = "ORD-${(1000..9999).random()}-${System.currentTimeMillis() % 10000}"
-                        val newOrder = com.example.herbhopper_v1.data.Order(
-                            orderId = orderId,
-                            userId = "david_g",
-                            userName = "David G.",
-                            itemsJson = itemsJson,
-                            totalAmount = cartItems.sumOf { it.product.price * it.quantity },
-                            status = "PENDING",
-                            timestamp = System.currentTimeMillis(),
-                            address = "Calle 10 # 5-12, Bogotá",
-                            paymentMethod = "CREDIT_CARD"
-                        )
-                        
-                        // 3. Persistir en la base de datos
-                        orderViewModel.placeOrder(newOrder)
+                        cartViewModel.clearCart()
                     }
 
-                    // 4. Limpiar el carrito y redirigir
-                    cartViewModel.clearCart()
+                    // 3. Navegar a la pantalla de confirmación
+                    navController.navigate("payment_confirmation") {
+                        popUpTo("checkout") { inclusive = true }
+                    }
+                },
+                onLaunchWebCheckout = { amount, oId, desc ->
+                    // Guardar los datos del pedido en el NavGraph para la siguiente pantalla
+                    lastOrderId     = oId
+                    lastOrderAmount = amount
+                    navController.navigate("epayco_webview")
+                }
+            )
+        }
+        composable("epayco_webview") {
+            EpaycoWebViewScreen(
+                amount = lastOrderAmount,
+                orderId = lastOrderId,
+                description = "Pedido HerbHopper - $lastOrderId",
+                onBack = { navController.popBackStack() },
+                onFinished = { status ->
+                    // 1. Guardar el estado de la transacción para la pantalla de confirmación
+                    lastPaymentStatus = status
+
+                    // 2. Persistir la orden solo si el pago fue exitoso o pendiente
+                    if (status is TransactionStatus.Accepted || status is TransactionStatus.Pending) {
+                        if (cartItems.isNotEmpty()) {
+                            val orderItems = cartItems.map { cartItem ->
+                                com.example.herbhopper_v1.data.OrderItem(
+                                    productId   = cartItem.product.id,
+                                    productName = cartItem.product.name,
+                                    quantity    = cartItem.quantity,
+                                    price       = cartItem.product.price
+                                )
+                            }
+                            val itemsJson = com.google.gson.Gson().toJson(orderItems)
+                            val paymentKey = when (status) {
+                                is TransactionStatus.Accepted -> "CREDIT_CARD"
+                                is TransactionStatus.Pending  -> "PSE_OR_CASH"
+                                else                          -> "UNKNOWN"
+                            }
+                            val newOrder = com.example.herbhopper_v1.data.Order(
+                                orderId       = lastOrderId,
+                                userId        = "david_g",
+                                userName      = "David G.",
+                                itemsJson     = itemsJson,
+                                totalAmount   = lastOrderAmount,
+                                status        = "PENDING",
+                                timestamp     = System.currentTimeMillis(),
+                                address       = "Bogotá, Colombia",
+                                paymentMethod = paymentKey
+                            )
+                            orderViewModel.placeOrder(newOrder)
+                        }
+                        cartViewModel.clearCart()
+                    }
+
+                    // 3. Navegar a la pantalla de confirmación final
+                    navController.navigate("payment_confirmation") {
+                        popUpTo("checkout") { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable("payment_confirmation") {
+            PaymentConfirmationScreen(
+                status       = lastPaymentStatus,
+                orderId      = lastOrderId,
+                totalAmount  = lastOrderAmount,
+                onGoToOrders = {
                     navController.navigate("order_history") {
-                        popUpTo("cart") { inclusive = true }
+                        popUpTo("payment_confirmation") { inclusive = true }
+                    }
+                },
+                onRetry = {
+                    navController.navigate("cart") {
+                        popUpTo("payment_confirmation") { inclusive = true }
                     }
                 }
             )

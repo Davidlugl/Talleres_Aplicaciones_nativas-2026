@@ -24,7 +24,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun syncFromCloud(uid: String) {
-        if (uid == "dummy_uid_patient") return
+        if (uid.isEmpty()) return
         
         viewModelScope.launch {
             try {
@@ -60,7 +60,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             }
             
             // 2. Guardar en la nube (Firestore) si no es dummy
-            if (profile.uid != "dummy_uid_patient" && profile.uid.isNotEmpty()) {
+            if (profile.uid.isNotEmpty()) {
                 try {
                     if (firestore == null) {
                         android.util.Log.e("ProfileVM", "⚠️ Firestore es NULL, no se puede guardar en nube")
