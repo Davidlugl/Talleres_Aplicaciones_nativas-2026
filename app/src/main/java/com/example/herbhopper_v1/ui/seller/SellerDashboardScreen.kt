@@ -200,11 +200,7 @@ fun SellerDashboardScreen(
                             val context = androidx.compose.ui.platform.LocalContext.current
                             val isWebUrl = product.imageUrl?.startsWith("http") == true
                             val imageResId = remember(product.imageUrl) {
-                                if (!product.imageUrl.isNullOrEmpty() && !isWebUrl) {
-                                    context.resources.getIdentifier(product.imageUrl, "drawable", context.packageName)
-                                } else {
-                                    0
-                                }
+                                product.getDrawableResId(context)
                             }
                             Box(
                                 modifier = Modifier
@@ -269,7 +265,9 @@ fun StockAlertItem(name: String, details: String, units: String, isCritical: Boo
     val isWebUrl = imageUrl?.startsWith("http") == true
     val imageResId = remember(imageUrl) {
         if (!imageUrl.isNullOrEmpty() && !isWebUrl) {
-            context.resources.getIdentifier(imageUrl, "drawable", context.packageName)
+            val nameWithoutExt = imageUrl.substringBefore(".")
+            val finalResName = if (nameWithoutExt.all { it.isDigit() }) "prod_$nameWithoutExt" else nameWithoutExt
+            context.resources.getIdentifier(finalResName, "drawable", context.packageName)
         } else {
             0
         }

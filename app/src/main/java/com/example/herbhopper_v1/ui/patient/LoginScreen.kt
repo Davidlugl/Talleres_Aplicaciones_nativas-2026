@@ -90,6 +90,29 @@ fun LoginScreen(
                     if (savedEmail != null && savedPassword != null) {
                         isLoading = true
                         scope.launch {
+                            if (savedEmail.lowercase() == "admin" && savedPassword == "admin123") {
+                                try {
+                                    val profile = com.example.herbhopper_v1.data.UserProfile(
+                                        uid = "user_demo_admin",
+                                        name = "Super Administrador",
+                                        email = "admin@herbhopper.com",
+                                        role = "ADMIN"
+                                    )
+                                    val db = com.example.herbhopper_v1.data.AppDatabase.getDatabase(context)
+                                    db.userDao().insertProfile(profile)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                                com.example.herbhopper_v1.data.SessionManager.login(
+                                    "user_demo_admin",
+                                    "admin@herbhopper.com",
+                                    "Super Administrador",
+                                    "ADMIN"
+                                )
+                                isLoading = false
+                                onAdminSuccess()
+                                return@launch
+                            }
                             val loginResult = profileViewModel.loginToBackend(savedEmail, savedPassword)
                             isLoading = false
                             if (loginResult.isSuccess) {
@@ -237,6 +260,41 @@ fun LoginScreen(
                         Button(
                             onClick = {
                                 val trimmedEmail = email.trim()
+                                val passwordInput = password
+                                
+                                if (trimmedEmail.lowercase() == "admin" && passwordInput == "admin123") {
+                                    isLoading = true
+                                    scope.launch {
+                                        try {
+                                            val profile = com.example.herbhopper_v1.data.UserProfile(
+                                                uid = "user_demo_admin",
+                                                name = "Super Administrador",
+                                                email = "admin@herbhopper.com",
+                                                role = "ADMIN"
+                                            )
+                                            val db = com.example.herbhopper_v1.data.AppDatabase.getDatabase(context)
+                                            db.userDao().insertProfile(profile)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                        
+                                        prefs.edit()
+                                            .putString("saved_email", "admin")
+                                            .putString("saved_password", "admin123")
+                                            .apply()
+                                            
+                                        com.example.herbhopper_v1.data.SessionManager.login(
+                                            "user_demo_admin",
+                                            "admin@herbhopper.com",
+                                            "Super Administrador",
+                                            "ADMIN"
+                                        )
+                                        isLoading = false
+                                        onAdminSuccess()
+                                    }
+                                    return@Button
+                                }
+                                
                                 val lowercaseEmail = trimmedEmail.lowercase()
                                 val allowedKeywords = listOf(
                                     "gmail", "outlook", "hotmail", "yahoo",

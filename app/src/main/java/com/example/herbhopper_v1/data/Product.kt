@@ -12,4 +12,12 @@ data class Product(
     val price: Double,
     val category: String = "General",
     val imageUrl: String? = null
-)
+) {
+    fun getDrawableResId(context: android.content.Context): Int {
+        val url = imageUrl ?: return 0
+        if (url.startsWith("http")) return 0
+        val nameWithoutExt = url.substringBefore(".")
+        val finalResName = if (nameWithoutExt.all { it.isDigit() }) "prod_$nameWithoutExt" else nameWithoutExt
+        return context.resources.getIdentifier(finalResName, "drawable", context.packageName)
+    }
+}

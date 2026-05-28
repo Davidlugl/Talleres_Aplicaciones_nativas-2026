@@ -98,11 +98,7 @@ fun InventoryCard(item: Product, onEdit: (Int) -> Unit, onDelete: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val isWebUrl = item.imageUrl?.startsWith("http") == true
     val imageResId = remember(item.imageUrl) {
-        if (!item.imageUrl.isNullOrEmpty() && !isWebUrl) {
-            context.resources.getIdentifier(item.imageUrl, "drawable", context.packageName)
-        } else {
-            0
-        }
+        item.getDrawableResId(context)
     }
 
     Card(

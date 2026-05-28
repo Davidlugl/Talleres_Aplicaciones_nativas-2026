@@ -86,11 +86,7 @@ fun ProductDetailsScreen(
             val context = androidx.compose.ui.platform.LocalContext.current
             val isWebUrl = product.imageUrl?.startsWith("http") == true
             val imageResId = remember(product.imageUrl) {
-                if (!product.imageUrl.isNullOrEmpty() && !isWebUrl) {
-                    context.resources.getIdentifier(product.imageUrl, "drawable", context.packageName)
-                } else {
-                    0
-                }
+                product.getDrawableResId(context)
             }
 
             // Main Image

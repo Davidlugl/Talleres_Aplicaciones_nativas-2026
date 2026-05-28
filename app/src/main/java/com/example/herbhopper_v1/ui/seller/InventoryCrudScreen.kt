@@ -106,7 +106,9 @@ fun InventoryCrudScreen(
                 val isWebUrl = imageUrl.startsWith("http")
                 val imageResId = remember(imageUrl) {
                     if (!imageUrl.isNullOrEmpty() && !isWebUrl) {
-                        context.resources.getIdentifier(imageUrl, "drawable", context.packageName)
+                        val nameWithoutExt = imageUrl.substringBefore(".")
+                        val finalResName = if (nameWithoutExt.all { it.isDigit() }) "prod_$nameWithoutExt" else nameWithoutExt
+                        context.resources.getIdentifier(finalResName, "drawable", context.packageName)
                     } else {
                         0
                     }

@@ -169,11 +169,7 @@ fun CartItemRow(
             val context = androidx.compose.ui.platform.LocalContext.current
             val isWebUrl = item.product.imageUrl?.startsWith("http") == true
             val imageResId = remember(item.product.imageUrl) {
-                if (!item.product.imageUrl.isNullOrEmpty() && !isWebUrl) {
-                    context.resources.getIdentifier(item.product.imageUrl, "drawable", context.packageName)
-                } else {
-                    0
-                }
+                item.product.getDrawableResId(context)
             }
 
             Box(
