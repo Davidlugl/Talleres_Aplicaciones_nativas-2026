@@ -28,7 +28,9 @@ import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.data.network.ApiService
 import com.example.herbhopper_v1.data.network.ForgotPasswordRequest
 import com.example.herbhopper_v1.data.network.PasswordResetResponse
-import com.example.herbhopper_v1.data.network.RegisterRequest
+import com.example.herbhopper_v1.data.network.AdminCreateUserRequest
+import com.example.herbhopper_v1.data.network.UserStatusRequest
+import com.example.herbhopper_v1.data.network.apiErrorMessage
 import com.example.herbhopper_v1.data.network.UpdateUserRequest
 import com.example.herbhopper_v1.data.network.UserResponse
 import com.example.herbhopper_v1.ui.components.AdminBottomNavBar
@@ -36,8 +38,9 @@ import kotlinx.coroutines.launch
 
 /**
  * Pantalla de Control de Cuentas de Usuario y Soporte de Claves (Admin User Management Panel).
- * Permite listar compradores, vendedores y pedidos de restablecimiento de contraseña en tiempo real.
- * Implementa la edición directa de credenciales (nombres, correos, contraseñas y roles) y eliminación.
+ * Lista compradores, vendedores, administradores y pedidos de restablecimiento de contraseña.
+ * Permite crear, editar (incluido el rol ADMIN), inactivar/reactivar y eliminar cuentas.
+ * Todas las operaciones van al backend, que exige token de administrador.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +49,7 @@ fun UserManagementScreen(
     onNavigate: (String) -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Compradores", "Vendedores", "Pedidos Clave")
+    val tabTitles = listOf("Compradores", "Vendedores", "Admins", "Pedidos Clave")
     
     var usersList by remember { mutableStateOf<List<UserResponse>>(emptyList()) }
     var resetsList by remember { mutableStateOf<List<PasswordResetResponse>>(emptyList()) }
@@ -80,7 +83,7 @@ fun UserManagementScreen(
                 isLoading = false
             } catch (e: Exception) {
                 isLoading = false
-                Toast.makeText(context, "Error al conectar al servidor: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, e.apiErrorMessage(), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -91,6 +94,21 @@ fun UserManagementScreen(
 
     val buyers = usersList.filter { it.role.uppercase() == "PATIENT" }
     val sellers = usersList.filter { it.role.uppercase() == "SELLER" }
+    val admins = usersList.filter { it.role.uppercase() == "ADMIN" }
+
+    fun toggleActive(user: UserResponse) {
+        isLoading = true
+        scope.launch {
+            try {
+                val result = ApiService.instance.setUserActive(user.id, UserStatusRequest(!user.active))
+                Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                refreshData()
+            } catch (e: Exception) {
+                isLoading = false
+                Toast.makeText(context, e.apiErrorMessage(), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     // Create User Dialog
     if (showCreateDialog) {
@@ -136,6 +154,11 @@ fun UserManagementScreen(
                             onClick = { newRole = "SELLER" },
                             label = { Text("Vendedor") }
                         )
+                        FilterChip(
+                            selected = newRole == "ADMIN",
+                            onClick = { newRole = "ADMIN" },
+                            label = { Text("Admin") }
+                        )
                     }
                 }
             },
@@ -146,11 +169,15 @@ fun UserManagementScreen(
                             Toast.makeText(context, "Por favor llena todos los campos", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
+                        if (!com.example.herbhopper_v1.data.Validators.isStrongPassword(newPassword)) {
+                            Toast.makeText(context, context.getString(R.string.toast_weak_password), Toast.LENGTH_LONG).show()
+                            return@Button
+                        }
                         isLoading = true
                         scope.launch {
                             try {
-                                ApiService.instance.register(
-                                    RegisterRequest(newName.trim(), newEmail.trim(), newPassword, newRole)
+                                ApiService.instance.adminCreateUser(
+                                    AdminCreateUserRequest(newName.trim(), newEmail.trim().lowercase(), newPassword, newRole)
                                 )
                                 showCreateDialog = false
                                 newName = ""
@@ -161,7 +188,7 @@ fun UserManagementScreen(
                                 refreshData()
                             } catch (e: Exception) {
                                 isLoading = false
-                                Toast.makeText(context, "Error al crear: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, e.apiErrorMessage(), Toast.LENGTH_LONG).show()
                             }
                         }
                     },
@@ -223,6 +250,11 @@ fun UserManagementScreen(
                             onClick = { editRole = "SELLER" },
                             label = { Text("Vendedor") }
                         )
+                        FilterChip(
+                            selected = editRole == "ADMIN",
+                            onClick = { editRole = "ADMIN" },
+                            label = { Text("Admin") }
+                        )
                     }
                 }
             },
@@ -246,7 +278,7 @@ fun UserManagementScreen(
                                 refreshData()
                             } catch (e: Exception) {
                                 isLoading = false
-                                Toast.makeText(context, "Error al modificar: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, e.apiErrorMessage(), Toast.LENGTH_LONG).show()
                             }
                         }
                     },
@@ -281,7 +313,7 @@ fun UserManagementScreen(
         },
         bottomBar = { AdminBottomNavBar(currentRoute = "users", onNavigate = onNavigate) },
         floatingActionButton = {
-            if (selectedTab < 2) {
+            if (selectedTab < 3) {
                 FloatingActionButton(
                     onClick = { showCreateDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -312,10 +344,10 @@ fun UserManagementScreen(
             }
 
             when (selectedTab) {
-                0 -> {
-                    // Buyers
+                0, 1, 2 -> {
+                    // Compradores, Vendedores o Administradores
                     UserListSection(
-                        users = buyers,
+                        users = when (selectedTab) { 0 -> buyers; 1 -> sellers; else -> admins },
                         onEdit = { user ->
                             editingUser = user
                             editName = user.name
@@ -324,6 +356,7 @@ fun UserManagementScreen(
                             editRole = user.role
                             showEditDialog = true
                         },
+                        onToggleActive = { user -> toggleActive(user) },
                         onDelete = { user ->
                             isLoading = true
                             scope.launch {
@@ -333,40 +366,13 @@ fun UserManagementScreen(
                                     refreshData()
                                 } catch (e: Exception) {
                                     isLoading = false
-                                    Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, e.apiErrorMessage(), Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
                     )
                 }
-                1 -> {
-                    // Sellers
-                    UserListSection(
-                        users = sellers,
-                        onEdit = { user ->
-                            editingUser = user
-                            editName = user.name
-                            editEmail = user.email
-                            editPassword = ""
-                            editRole = user.role
-                            showEditDialog = true
-                        },
-                        onDelete = { user ->
-                            isLoading = true
-                            scope.launch {
-                                try {
-                                    ApiService.instance.deleteUser(user.id)
-                                    Toast.makeText(context, "Usuario eliminado", Toast.LENGTH_SHORT).show()
-                                    refreshData()
-                                } catch (e: Exception) {
-                                    isLoading = false
-                                    Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                                }
-                            }
-                        }
-                    )
-                }
-                2 -> {
+                3 -> {
                     // Resets Requests
                     ResetsRequestSection(
                         resets = resetsList,
@@ -379,7 +385,7 @@ fun UserManagementScreen(
                                     refreshData()
                                 } catch (e: Exception) {
                                     isLoading = false
-                                    Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, e.apiErrorMessage(), Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -394,6 +400,7 @@ fun UserManagementScreen(
 fun UserListSection(
     users: List<UserResponse>,
     onEdit: (UserResponse) -> Unit,
+    onToggleActive: (UserResponse) -> Unit,
     onDelete: (UserResponse) -> Unit
 ) {
     if (users.isEmpty()) {
@@ -437,11 +444,21 @@ fun UserListSection(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(user.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                             Text(user.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (!user.active) {
+                                Text("INACTIVA", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                            }
                         }
 
                         Row {
                             IconButton(onClick = { onEdit(user) }) {
                                 Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { onToggleActive(user) }) {
+                                Icon(
+                                    if (user.active) Icons.Default.Block else Icons.Default.LockOpen,
+                                    contentDescription = if (user.active) "Inactivar" else "Reactivar",
+                                    tint = if (user.active) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                )
                             }
                             IconButton(onClick = { onDelete(user) }) {
                                 Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)

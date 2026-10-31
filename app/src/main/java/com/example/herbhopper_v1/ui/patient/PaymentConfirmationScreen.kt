@@ -414,9 +414,9 @@ private fun statusTitle(status: TransactionStatus): String = when (status) {
 
 private fun statusSubtitle(status: TransactionStatus): String = when (status) {
     is TransactionStatus.Accepted ->
-        "Tu transacción fue aprobada por el banco.\nTu pedido está siendo preparado."
+        "Tu transacción fue aprobada por el banco.\nEl dispensario revisará tu pedido (y tu fórmula, si aplica) para despacharlo."
     is TransactionStatus.Pending  ->
-        "Tu pago está siendo verificado.\nTe notificaremos cuando se confirme."
+        "Tu pago está pendiente de confirmación.\nPSE: el banco confirmará en unos minutos. Efectivo: paga el cupón que generó ePayco antes de su fecha límite. Verás el estado en Mis Pedidos."
     is TransactionStatus.Rejected ->
         "El banco rechazó la transacción.\n${status.reason}"
     is TransactionStatus.Failed   ->

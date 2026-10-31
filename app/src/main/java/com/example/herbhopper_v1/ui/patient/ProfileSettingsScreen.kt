@@ -25,11 +25,6 @@ import com.example.herbhopper_v1.data.DeliveryAddress
 import com.example.herbhopper_v1.data.SessionManager
 import com.example.herbhopper_v1.viewmodel.DeliveryAddressViewModel
 import com.example.herbhopper_v1.viewmodel.GpsState
-import com.google.firebase.auth.FirebaseAuth
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TransformedText
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 /**
@@ -44,7 +39,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun ProfileSettingsScreen(
     title: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onAccountDeleted: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -67,7 +63,7 @@ fun ProfileSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             when (title) {
-                "Configuración" -> AccountSettings()
+                "Configuración" -> AccountSettings(onAccountDeleted)
                 "Métodos de Pago" -> PaymentSettings()
                 "Direcciones" -> AddressSettings()
                 "Notificaciones" -> NotificationSettings()
@@ -87,102 +83,30 @@ fun PaymentSettings() {
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
     val uid = com.example.herbhopper_v1.data.SessionManager.getUid()
-
-    var showDialog by remember { mutableStateOf(false) }
-    var cardNumber by remember { mutableStateOf("") }
-    var expiry by remember { mutableStateOf("") }
-    var cvv by remember { mutableStateOf("") }
-
     val profileFromDb by viewModel.observeProfile(uid).collectAsState(initial = null)
 
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text(stringResource(id = R.string.add_update_card_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = cardNumber,
-                        onValueChange = { cardNumber = it.filter { c -> c.isDigit() }.take(16) },
-                        label = { Text(stringResource(id = R.string.card_number_label)) },
-                        placeholder = { Text(stringResource(id = R.string.card_digits_placeholder)) },
-                        visualTransformation = ProfileCreditCardTransformation()
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = expiry,
-                            onValueChange = { expiry = it.filter { c -> c.isDigit() }.take(4) },
-                            label = { Text(stringResource(id = R.string.expiry_label)) },
-                            placeholder = { Text(stringResource(id = R.string.expiry_placeholder)) },
-                            modifier = Modifier.weight(1f),
-                            visualTransformation = ProfileExpiryDateTransformation()
-                        )
-                        OutlinedTextField(
-                            value = cvv,
-                            onValueChange = { cvv = it.filter { c -> c.isDigit() }.take(3) },
-                            label = { Text(stringResource(id = R.string.cvv_label)) },
-                            placeholder = { Text(stringResource(id = R.string.cvv_placeholder)) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    if (cardNumber.length != 16) {
-                        Toast.makeText(context, context.getString(R.string.toast_invalid_card), Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    if (expiry.length != 4) {
-                        Toast.makeText(context, context.getString(R.string.toast_invalid_expiry), Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    if (cvv.length != 3) {
-                        Toast.makeText(context, context.getString(R.string.toast_invalid_cvv), Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-
-                    val formattedMethod = "Tarjeta **** " + cardNumber.takeLast(4)
-                    val updated = profileFromDb?.copy(paymentMethod = formattedMethod) ?: com.example.herbhopper_v1.data.UserProfile(
-                        uid = uid,
-                        name = com.example.herbhopper_v1.data.SessionManager.getName().ifEmpty { "Usuario" },
-                        email = com.example.herbhopper_v1.data.SessionManager.getEmail(),
-                        role = "PATIENT",
-                        paymentMethod = formattedMethod
-                    )
-                    viewModel.saveProfile(updated)
-                    Toast.makeText(context, context.getString(R.string.toast_payment_method_saved), Toast.LENGTH_SHORT).show()
-                    showDialog = false
-                    cardNumber = ""; expiry = ""; cvv = ""
-                }) { Text(stringResource(id = R.string.save_btn)) }
-            },
-            dismissButton = { TextButton(onClick = { showDialog = false }) { Text(stringResource(id = R.string.cancel_btn)) } }
-        )
-    }
+    // Solo se recuerda el medio preferido. Los datos de la tarjeta se digitan únicamente en el
+    // checkout oficial de ePayco (PCI DSS): la app no los pide ni los guarda.
+    val options = listOf(
+        Triple("CREDIT_CARD", stringResource(id = R.string.credit_card_method), Icons.Default.CreditCard),
+        Triple("PSE", stringResource(id = R.string.bank_transfer_method), Icons.Default.AccountBalance),
+        Triple("CASH", stringResource(id = R.string.cash_method), Icons.Default.Store)
+    )
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(stringResource(id = R.string.saved_cards_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-
-        profileFromDb?.paymentMethod?.let { method ->
-            SettingItem(
-                title = method,
-                subtitle = stringResource(id = R.string.default_method),
-                icon = Icons.Default.CreditCard,
-                onDelete = {
+        Text(stringResource(id = R.string.preferred_payment_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(id = R.string.preferred_payment_info), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        options.forEach { (key, label, icon) ->
+            PaymentMethodItem(
+                title = label,
+                icon = icon,
+                isSelected = profileFromDb?.paymentMethod == key,
+                onClick = {
                     profileFromDb?.let { profile ->
-                        val updated = profile.copy(paymentMethod = null)
-                        viewModel.saveProfile(updated)
+                        viewModel.saveLocalPreferences(profile.copy(paymentMethod = key))
+                        Toast.makeText(context, context.getString(R.string.toast_payment_method_saved), Toast.LENGTH_SHORT).show()
                     }
                 }
-            )
-        } ?: Text(stringResource(id = R.string.no_saved_cards), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-        Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.Add, null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                if (profileFromDb?.paymentMethod == null) stringResource(id = R.string.add_new_method)
-                else stringResource(id = R.string.change_card)
             )
         }
     }
@@ -573,7 +497,7 @@ fun DeliveryAddressCard(
  * y guardar los cambios directamente en el repositorio persistente.
  */
 @Composable
-fun AccountSettings() {
+fun AccountSettings(onAccountDeleted: () -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
@@ -611,9 +535,12 @@ fun AccountSettings() {
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Phone, null) }
         )
+        // El correo identifica la cuenta: solo lo cambia un administrador
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = {},
+            readOnly = true,
+            enabled = false,
             label = { Text(stringResource(id = R.string.email_settings_label)) },
             modifier = Modifier.fillMaxWidth(),
             leadingIcon = { Icon(Icons.Default.Email, null) }
@@ -623,33 +550,89 @@ fun AccountSettings() {
         Button(
             onClick = {
                 val cleanPhone = phone.filter { it.isDigit() }.take(10)
-                if (cleanPhone.length != 10) {
+                if (!com.example.herbhopper_v1.data.Validators.isValidColombianMobile(cleanPhone)) {
                     Toast.makeText(context, context.getString(R.string.toast_invalid_phone), Toast.LENGTH_LONG).show()
                     return@Button
                 }
-
-                val prefixVal = context.getString(R.string.colombia_prefix)
-                val formattedPhone = "$prefixVal$cleanPhone"
-                val updatedProfile = profileFromDb?.copy(
-                    name = name,
-                    email = email,
-                    phone = formattedPhone
-                ) ?: com.example.herbhopper_v1.data.UserProfile(
-                    uid = uid,
-                    name = name,
-                    email = email,
-                    phone = formattedPhone,
-                    role = "PATIENT"
-                )
-
-                android.util.Log.d("ProfileSettings", "Click en Guardar para UID: $uid")
-                viewModel.saveProfile(updatedProfile)
-                Toast.makeText(context, context.getString(R.string.toast_saving_changes), Toast.LENGTH_SHORT).show()
+                if (name.isBlank()) {
+                    Toast.makeText(context, context.getString(R.string.toast_fill_name_email), Toast.LENGTH_LONG).show()
+                    return@Button
+                }
+                val formattedPhone = "${context.getString(R.string.colombia_prefix).trim()}$cleanPhone"
+                val current = profileFromDb ?: return@Button
+                viewModel.saveProfile(current.copy(name = name.trim(), phone = formattedPhone)) { error ->
+                    Toast.makeText(context, error ?: context.getString(R.string.toast_changes_saved), Toast.LENGTH_SHORT).show()
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(stringResource(id = R.string.save_changes_btn), fontWeight = FontWeight.Bold)
+        }
+
+        // ---- Cambiar contraseña ----
+        HorizontalDivider()
+        Text(stringResource(id = R.string.change_password_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        var newPassword by remember { mutableStateOf("") }
+        OutlinedTextField(
+            value = newPassword,
+            onValueChange = { newPassword = it },
+            label = { Text(stringResource(id = R.string.new_password_label)) },
+            visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            singleLine = true,
+            supportingText = {
+                val missing = com.example.herbhopper_v1.data.Validators.missingPasswordRules(newPassword)
+                if (newPassword.isNotEmpty() && missing.isNotEmpty()) {
+                    Text(stringResource(id = R.string.password_rules_hint, missing.joinToString(", ")))
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            leadingIcon = { Icon(Icons.Default.Lock, null) }
+        )
+        OutlinedButton(
+            onClick = {
+                if (!com.example.herbhopper_v1.data.Validators.isStrongPassword(newPassword)) {
+                    Toast.makeText(context, context.getString(R.string.toast_weak_password), Toast.LENGTH_LONG).show()
+                    return@OutlinedButton
+                }
+                viewModel.changePassword(newPassword) { error ->
+                    if (error == null) newPassword = ""
+                    Toast.makeText(context, error ?: context.getString(R.string.toast_password_changed), Toast.LENGTH_LONG).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(id = R.string.change_password_btn))
+        }
+
+        // ---- Eliminar cuenta (derecho de supresión, Ley 1581) ----
+        HorizontalDivider()
+        var confirmDelete by remember { mutableStateOf(false) }
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = { Text(stringResource(id = R.string.delete_account_title)) },
+                text = { Text(stringResource(id = R.string.delete_account_message)) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            confirmDelete = false
+                            viewModel.deleteAccount { error ->
+                                if (error == null) onAccountDeleted() else Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) { Text(stringResource(id = R.string.delete_account_btn)) }
+                },
+                dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(id = R.string.cancel_btn)) } }
+            )
+        }
+        TextButton(
+            onClick = { confirmDelete = true },
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(id = R.string.delete_account_btn))
         }
     }
 }
@@ -714,69 +697,5 @@ fun SettingItem(title: String, subtitle: String, icon: ImageVector, onEdit: (() 
             }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, null, tint = MaterialTheme.colorScheme.error) }
         }
-    }
-}
-
-/**
- * Transformación visual para tarjetas de crédito (agrupa dígitos de 4 en 4 separados por espacios).
- */
-private class ProfileCreditCardTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val trimmed = if (text.text.length >= 16) text.text.substring(0, 16) else text.text
-        var out = ""
-        for (i in trimmed.indices) {
-            out += trimmed[i]
-            if (i % 4 == 3 && i < 15) out += " "
-        }
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                if (offset <= 4) return offset
-                if (offset <= 8) return offset + 1
-                if (offset <= 12) return offset + 2
-                if (offset <= 16) return offset + 3
-                return 19
-            }
-
-            override fun transformedToOriginal(offset: Int): Int {
-                if (offset <= 4) return offset
-                if (offset <= 9) return offset - 1
-                if (offset <= 14) return offset - 2
-                if (offset <= 19) return offset - 3
-                return 16
-            }
-        }
-
-        return TransformedText(AnnotatedString(out), offsetMapping)
-    }
-}
-
-/**
- * Transformación visual para fecha de vencimiento en formato MM/AA.
- */
-private class ProfileExpiryDateTransformation : VisualTransformation {
-    override fun filter(text: AnnotatedString): TransformedText {
-        val trimmed = if (text.text.length >= 4) text.text.substring(0, 4) else text.text
-        var out = ""
-        for (i in trimmed.indices) {
-            out += trimmed[i]
-            if (i == 1) out += "/"
-        }
-
-        val offsetMapping = object : OffsetMapping {
-            override fun originalToTransformed(offset: Int): Int {
-                if (offset <= 1) return offset
-                if (offset <= 4) return offset + 1
-                return 5
-            }
-
-            override fun transformedToOriginal(offset: Int): Int {
-                if (offset <= 2) return offset
-                if (offset <= 5) return offset - 1
-                return 4
-            }
-        }
-
-        return TransformedText(AnnotatedString(out), offsetMapping)
     }
 }

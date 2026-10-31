@@ -21,12 +21,11 @@ import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.ui.components.PatientBottomNavBar
 import com.example.herbhopper_v1.viewmodel.ProfileViewModel
 import com.example.herbhopper_v1.navigation.ProfileOptionDestination
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.collect
 
 /**
  * Pantalla de Visualización del Perfil del paciente.
- * Obtiene de forma reactiva y segura los datos de perfil desde Firebase u origen local simulado,
+ * Obtiene de forma reactiva los datos de perfil desde el backend (con copia local en Room),
  * gestionando el flujo mediante [ProfileViewModel] dentro de un `produceState` para evitar fugas.
  * Permite acceder a sub-secciones como Configuración, Métodos de Pago, Direcciones y Notificaciones,
  * así como cerrar la sesión de forma segura.
@@ -134,10 +133,7 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = {
-                    com.example.herbhopper_v1.data.SessionManager.logout()
-                    onLogout()
-                },
+                onClick = { viewModel.logout(onLogout) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)

@@ -67,6 +67,7 @@ fun InventoryScreen(
             ) 
         }
     ) { padding ->
+        val context = androidx.compose.ui.platform.LocalContext.current
         val inventoryItems by viewModel.allProducts.collectAsState(initial = emptyList())
 
         LazyColumn(
@@ -78,7 +79,11 @@ fun InventoryScreen(
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             items(inventoryItems) { item ->
-                InventoryCard(item, onEditProduct, onDelete = { viewModel.delete(item) })
+                InventoryCard(item, onEditProduct, onDelete = {
+                    viewModel.delete(item) { error ->
+                        error?.let { android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show() }
+                    }
+                })
             }
         }
     }
@@ -144,9 +149,16 @@ fun InventoryCard(item: Product, onEdit: (Int) -> Unit, onDelete: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(item.category, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    androidx.compose.ui.res.stringResource(id = com.example.herbhopper_v1.R.string.units_count, item.stock) +
+                        if (item.isCriticalStock) " · " + androidx.compose.ui.res.stringResource(id = com.example.herbhopper_v1.R.string.critical) else "",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = if (item.isCriticalStock) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("$${String.format("%,.0f", item.price)} COP", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                Text(com.example.herbhopper_v1.ui.patient.formatCop(item.price), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             }
             Spacer(modifier = Modifier.width(8.dp))
             Row {

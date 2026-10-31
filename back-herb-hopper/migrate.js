@@ -1,124 +1,140 @@
+// Reinicia la base de datos con el esquema actual y datos de demostración.
+// ¡Borra todos los datos! Uso: DATABASE_URL=... JWT_SECRET=... DEMO_PASSWORD=... node migrate.js
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const pool = require('./db');
+const { ensureSchema } = require('./lib/schema');
+const { isStrongPassword } = require('./lib/validators');
+
+// Ficha técnica por categoría (concentración, beneficios, modo de uso, certificaciones)
+const CATEGORY_SHEETS = {
+    'Líquidos y Aceites': {
+        cbd: 'CBD 1000 mg / 30 ml (3,3 %)',
+        benefits: 'Apoyo en dolor crónico, ansiedad e insomnio.',
+        usage: 'Vía sublingual: 5 a 10 gotas, mantener 60 s bajo la lengua. Máximo 3 veces al día.',
+        certs: 'Registro sanitario INVIMA · BPM · Análisis de laboratorio por lote'
+    },
+    'Comestibles': {
+        cbd: 'CBD 10–25 mg por unidad',
+        benefits: 'Dosificación exacta y discreta para manejo del estrés y el sueño.',
+        usage: 'Vía oral: 1 unidad al día; efecto entre 30 y 90 minutos.',
+        certs: 'Registro sanitario INVIMA · BPM alimentos'
+    },
+    'Tópicos': {
+        cbd: 'CBD 500 mg por envase',
+        benefits: 'Alivio local de dolor muscular y articular e inflamación cutánea.',
+        usage: 'Uso externo: aplicar sobre piel limpia 2 a 3 veces al día. No ingerir.',
+        certs: 'Notificación sanitaria obligatoria (NSO) INVIMA · Cosmético'
+    },
+    'Bienestar y Cuidado': {
+        cbd: 'CBD 100–200 mg por unidad',
+        benefits: 'Relajación y apoyo en terapias preventivas.',
+        usage: 'Uso externo según indicaciones del empaque.',
+        certs: 'NSO INVIMA · Cosmético'
+    },
+    'Concentrados y Otros': {
+        cbd: 'CBD de alta pureza (≥ 80 %)',
+        benefits: 'Fórmulas magistrales para dosificación personalizada bajo control médico.',
+        usage: 'Únicamente según la dosis indicada en la fórmula médica.',
+        certs: 'Registro sanitario INVIMA · Licencia de fabricación de derivados de cannabis'
+    },
+    'Bebidas y Suplementos': {
+        cbd: 'CBD 10–20 mg por porción',
+        benefits: 'Relajación sin los efectos del alcohol; apoyo digestivo.',
+        usage: 'Vía oral: 1 porción al día.',
+        certs: 'Registro sanitario INVIMA · BPM alimentos'
+    },
+    'Comestibles Especializados': {
+        cbd: 'CBD 5–15 mg por porción',
+        benefits: 'Suplemento para dietas medicinales de consumo constante.',
+        usage: 'Vía oral, integrado en preparaciones; no exceder 2 porciones al día.',
+        certs: 'Registro sanitario INVIMA · BPM alimentos'
+    }
+};
+
+// [nombre, descripción, precio, categoría, imagen, stock, % THC]
+const PRODUCTS = [
+    ['Aceite de CBD Full Spectrum', 'El formato más común para administrar gotas sublinguales.', 65000, 'Líquidos y Aceites', 'prod_1', 40, 0.2],
+    ['Nano-emulsiones de agua', 'Líquidos solubles en agua que se pueden mezclar con cualquier bebida.', 75000, 'Líquidos y Aceites', 'prod_2', 25, 0.1],
+    ['Jarabe de CBD/THC', 'Utilizado a menudo para ayudar a conciliar el sueño.', 85000, 'Líquidos y Aceites', 'prod_3', 12, 5.0],
+    ['Sprays Sublinguales', 'Rocíos que se aplican debajo de la lengua para una absorción rápida.', 58000, 'Líquidos y Aceites', 'prod_4', 30, 0.2],
+    ['Gomitas (Gummies)', 'De sabores frutales, con dosis exactas de 10 mg o 25 mg.', 42000, 'Comestibles', 'prod_5', 60, 0],
+    ['Chocolates Artesanales', 'Tabletas de chocolate con infusiones de cannabinoides.', 48000, 'Comestibles', 'prod_6', 35, 0],
+    ['Cápsulas de Gel (Softgels)', 'Ideales para quienes no quieren sentir el sabor de la planta.', 55000, 'Comestibles', 'prod_7', 45, 0.2],
+    ['Miel de Cannabis', 'Miel natural infusionada, usada como endulzante medicinal.', 62000, 'Comestibles', 'prod_8', 20, 0],
+    ['Mentas Medicinales', 'Pequeñas pastillas para microdosis discretas durante el día.', 35000, 'Comestibles', 'prod_9', 50, 0],
+    ['Bálsamos para Dolor Muscular', 'Cremas con efecto frío/calor para atletas o personas con artritis.', 59000, 'Tópicos', 'prod_10', 28, 0],
+    ['Parches Transdérmicos', 'Liberan el compuesto de forma constante durante 12-24 horas.', 68000, 'Tópicos', 'prod_11', 18, 0],
+    ['Aceites para Masaje', 'Enriquecidos con CBD para relajación profunda sin efectos psicoactivos.', 72000, 'Tópicos', 'prod_12', 22, 0],
+    ['Lubricantes Medicinales', 'Diseñados para reducir el dolor o aumentar la sensibilidad.', 80000, 'Tópicos', 'prod_13', 15, 0],
+    ['Sales de Baño (Epsom)', 'Para baños de inmersión relajantes y desinflamatorios.', 45000, 'Bienestar y Cuidado', 'prod_14', 30, 0],
+    ['Bombas de Baño', 'Al contacto con el agua liberan aceites esenciales y cannabinoides.', 38000, 'Bienestar y Cuidado', 'prod_15', 40, 0],
+    ['Mascarillas Faciales', 'Usadas en dermatología para reducir la inflamación cutánea.', 32000, 'Bienestar y Cuidado', 'prod_16', 3, 0],
+    ['Destilado en Jeringas', 'Un aceite muy puro que se puede comer directamente o usar en recetas.', 110000, 'Concentrados y Otros', 'prod_17', 8, 2.0],
+    ['Inhaladores', 'Entregan una dosis precisa de vapor sin combustión.', 95000, 'Concentrados y Otros', 'prod_18', 4, 1.5],
+    ['Supositorios', 'Para pacientes con problemas gastrointestinales graves o dolores pélvicos.', 88000, 'Concentrados y Otros', 'prod_19', 10, 1.0],
+    ['Polvos Hidrosolubles', 'Sobres de polvo que se disuelven en agua, ideales para llevar.', 60000, 'Concentrados y Otros', 'prod_20', 25, 0.2],
+    ['Cerveza sin alcohol con CBD', 'Bebida refrescante con efecto relajante sin resaca.', 25000, 'Bebidas y Suplementos', 'prod_21', 48, 0],
+    ['Kombucha infusionada', 'Mezcla de probióticos y cannabis para la salud digestiva.', 22000, 'Bebidas y Suplementos', 'prod_22', 36, 0],
+    ['Café en grano con CBD', 'La alerta del café reduciendo la ansiedad de la cafeína.', 45000, 'Bebidas y Suplementos', 'prod_23', 30, 0],
+    ['Té de hierbas (Tisanas)', 'Bolsitas de té con flores de cáñamo y plantas medicinales.', 30000, 'Bebidas y Suplementos', 'prod_24', 40, 0],
+    ['Shots de energía', 'Dosis líquidas que combinan CBD con vitamina B12 y cafeína.', 18000, 'Bebidas y Suplementos', 'prod_25', 2, 0],
+    ['Mantequilla (Cannabutter)', 'Base lista para cocinar o untar en dietas medicinales.', 78000, 'Comestibles Especializados', 'prod_26', 14, 0.2],
+    ['Caramelos macizos', 'Ideales para una absorción lenta a través de la mucosa bucal.', 28000, 'Comestibles Especializados', 'prod_27', 55, 0],
+    ['Aceite de Oliva infusionado', 'Para uso directo en ensaladas como suplemento nutricional.', 85000, 'Comestibles Especializados', 'prod_28', 16, 0.2],
+    ['Harina de Cáñamo con CBD', 'Utilizada en repostería funcional para pacientes.', 40000, 'Comestibles Especializados', 'prod_29', 20, 0],
+    ['Chicles medicinales', 'Liberación rápida de los compuestos al masticar.', 32000, 'Comestibles Especializados', 'prod_30', 45, 0]
+];
 
 async function migrate() {
-    console.log('🔄 Iniciando migración a PostgreSQL en Render...');
-    
-    // Conexión inicial para validar
-    try {
-        const testConn = await pool.query('SELECT NOW()');
-        console.log('✅ Conexión exitosa a Render PostgreSQL a las:', testConn.rows[0].now);
-    } catch (err) {
-        console.error('❌ Error de conexión inicial:', err.message);
+    const demoPassword = process.env.DEMO_PASSWORD || `Demo#${crypto.randomBytes(4).toString('hex')}A1`;
+    if (!isStrongPassword(demoPassword)) {
+        console.error('❌ DEMO_PASSWORD no cumple la política (8+ caracteres, mayúscula, minúscula, número y especial)');
         process.exit(1);
     }
 
     try {
-        // 1. Limpieza de tablas antiguas (en orden inverso de claves foráneas)
-        console.log('🧹 Limpiando tablas antiguas si existen...');
-        await pool.query('DROP TABLE IF EXISTS orders CASCADE');
-        await pool.query('DROP TABLE IF EXISTS products CASCADE');
-        await pool.query('DROP TABLE IF EXISTS users CASCADE');
-        console.log('✅ Tablas antiguas eliminadas.');
+        console.log('🧹 Eliminando tablas...');
+        for (const table of ['support_messages', 'restock_requests', 'stores', 'audit_logs', 'refresh_tokens',
+            'password_resets', 'orders', 'prescriptions', 'products', 'users']) {
+            await pool.query(`DROP TABLE IF EXISTS ${table} CASCADE`);
+        }
 
-        // 2. Crear tabla de usuarios
-        console.log('📋 Creando tabla "users"...');
-        await pool.query(`
-            CREATE TABLE users (
-                id VARCHAR(255) PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) NOT NULL UNIQUE,
-                password VARCHAR(255) NOT NULL,
-                role VARCHAR(50) DEFAULT 'PATIENT'
-            )
-        `);
+        console.log('📋 Creando esquema...');
+        await ensureSchema();
 
-        // 3. Crear tabla de productos
-        console.log('📋 Creando tabla "products"...');
-        await pool.query(`
-            CREATE TABLE products (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                description TEXT,
-                price DOUBLE PRECISION NOT NULL,
-                category VARCHAR(100) NOT NULL,
-                "imageUrl" VARCHAR(255)
-            )
-        `);
-
-        // 4. Crear tabla de órdenes
-        console.log('📋 Creando tabla "orders"...');
-        await pool.query(`
-            CREATE TABLE orders (
-                "orderId" VARCHAR(255) PRIMARY KEY,
-                "userId" VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                "userName" VARCHAR(255) NOT NULL,
-                "itemsJson" TEXT NOT NULL,
-                "totalAmount" DOUBLE PRECISION NOT NULL,
-                status VARCHAR(50) DEFAULT 'PENDING',
-                timestamp BIGINT NOT NULL,
-                address TEXT,
-                "paymentMethod" VARCHAR(100)
-            )
-        `);
-        console.log('✅ Esquemas de tablas creados en PostgreSQL.');
-
-        // 5. Sembrar productos (Seed Data)
-        console.log('🌱 Sembrando datos de productos...');
-        const productsList = [
-            [1, 'Aceite de CBD Full Spectrum', 'El formato más común para administrar gotas sublinguales.', 120000.0, 'Aceites', '1.png'],
-            [2, 'Nano-emulsiones de agua', 'Líquidos solubles en agua que se pueden mezclar con cualquier bebida.', 85000.0, 'Aceites', '2.png'],
-            [3, 'Jarabe de CBD/THC', 'Utilizado a menudo para ayudar a conciliar el sueño (estilo "lean" medicinal).', 95000.0, 'Aceites', '3.png'],
-            [4, 'Sprays Sublinguales', 'Rocíos que se aplican debajo de la lengua para una absorción rápida.', 70000.0, 'Aceites', '4.png'],
-            [5, 'Gomitas (Gummies)', 'De sabores frutales, generalmente con dosis exactas de 10mg o 25mg.', 45000.0, 'Comestibles', '5.png'],
-            [6, 'Chocolates Artesanales', 'Tabletas de chocolate negro o con leche con infusiones de cannabinoides.', 35000.0, 'Comestibles', '6.png'],
-            [7, 'Cápsulas de Gel (Softgels)', 'Ideales para quienes no quieren sentir el sabor de la planta.', 65000.0, 'Comestibles', '7.png'],
-            [8, 'Miel de Cannabis', 'Miel natural infusionada, usada como endulzante medicinal.', 55000.0, 'Comestibles', '8.png'],
-            [9, 'Mentas Medicinales', 'Pequeñas pastillas para microdosis discretas durante el día.', 25000.0, 'Comestibles', '9.png'],
-            [10, 'Bálsamos para Dolor Muscular', 'Cremas con efecto frío/calor para atletas o personas con artritis.', 48000.0, 'Tópicos', '10.png'],
-            [11, 'Parches Transdérmicos', 'Liberan el medicamento de forma constante durante 12-24 horas.', 32000.0, 'Tópicos', '11.png'],
-            [12, 'Aceites para Masaje', 'Enriquecidos con CBD para relajación profunda sin efectos psicoactivos.', 75000.0, 'Tópicos', '12.png'],
-            [13, 'Lubricantes Medicinales', 'Diseñados para reducir el dolor o aumentar la sensibilidad.', 60000.0, 'Tópicos', '13.png'],
-            [14, 'Sales de Baño (Epsom)', 'Para baños de inmersión relajantes y desinflamatorios.', 40000.0, 'Bienestar', '14.png'],
-            [15, 'Bombas de Baño', 'Al contacto con el agua liberan aceites esenciales y cannabinoides.', 22000.0, 'Bienestar', '15.png'],
-            [16, 'Mascarillas Faciales', 'Utilizadas en dermatología medicinal para reducir la inflamación cutánea.', 18000.0, 'Bienestar', '16.png'],
-            [17, 'Destilado en Jeringas', 'Un aceite muy puro que se puede comer directamente o usar en recetas.', 150000.0, 'Concentrados', '17.png'],
-            [18, 'Inhaladores', 'Entregan una dosis precisa de vapor sin combustión.', 110000.0, 'Concentrados', '18.png'],
-            [19, 'Supositorios', 'Para pacientes con problemas gastrointestinales graves o dolores pélvicos.', 80000.0, 'Concentrados', '19.png'],
-            [20, 'Polvos Hidrosolubles', 'Sobres de polvo que se disuelven en agua, ideales para llevar.', 30000.0, 'Concentrados', '20.png'],
-            [21, 'Cerveza sin alcohol con CBD', 'Bebidas refrescantes que buscan el efecto relajante.', 15000.0, 'Bebidas', '21.png'],
-            [22, 'Kombucha infusionada', 'Mezcla de probióticos y cannabis para la salud digestiva.', 18000.0, 'Bebidas', '22.png'],
-            [23, 'Café en grano con CBD', 'Diseñado para obtener la alerta del café sin la ansiedad.', 42000.0, 'Bebidas', '23.png'],
-            [24, 'Té de hierbas (Tisanas)', 'Bolsitas de té con flores de cáñamo y plantas medicinales.', 28000.0, 'Bebidas', '24.png'],
-            [25, 'Shots de energía', 'Pequeñas dosis líquidas con CBD, vitamina B12 y cafeína.', 12000.0, 'Bebidas', '25.png'],
-            [26, 'Mantequilla (Cannabutter)', 'Base lista para cocinar o untar en dietas medicinales.', 65000.0, 'Especializados', '26.png'],
-            [27, 'Caramelos macizos', 'Ideales para una absorción lenta a través de la mucosa bucal.', 15000.0, 'Especializados', '27.png'],
-            [28, 'Aceite de Oliva infusionado', 'Para uso directo en ensaladas como suplemento nutricional.', 78000.0, 'Especializados', '28.png'],
-            [29, 'Harina de Cáñamo con CBD', 'Utilizada en repostería funcional para pacientes.', 38000.0, 'Especializados', '29.png'],
-            [30, 'Chicles medicinales', 'Permiten una liberación rápida de los compuestos al masticar.', 20000.0, 'Especializados', '30.png']
-        ];
-
-        for (const prod of productsList) {
+        console.log('🌱 Sembrando productos...');
+        for (const [name, description, price, category, imageUrl, stock, thc] of PRODUCTS) {
+            const sheet = CATEGORY_SHEETS[category];
             await pool.query(
-                'INSERT INTO products (id, name, description, price, category, "imageUrl") VALUES ($1, $2, $3, $4, $5, $6)',
-                prod
+                `INSERT INTO products (name, description, price, category, "imageUrl", stock, "minStock", "cbdConcentration",
+                    "thcPercent", benefits, "usageMode", certifications, "requiresPrescription")
+                 VALUES ($1,$2,$3,$4,$5,$6,5,$7,$8,$9,$10,$11,$12)`,
+                [name, description, price, category, imageUrl, stock, sheet.cbd, thc, sheet.benefits, sheet.usage, sheet.certs, thc >= 1.0]
             );
         }
-        
-        // Ajustar secuencia de ID de productos en Postgres ya que forzamos los IDs manuales inicialmente
-        await pool.query("SELECT setval('products_id_seq', COALESCE((SELECT MAX(id)+1 FROM products), 1), false)");
-        console.log('✅ 30 productos sembrados.');
 
-        // 6. Sembrar usuarios de prueba
         console.log('🌱 Sembrando usuarios demo...');
-        await pool.query(`
-            INSERT INTO users (id, name, email, password, role) VALUES 
-            ('user_demo_patient', 'Paciente Demo', 'paciente@demo.com', 'password123', 'PATIENT'),
-            ('user_demo_admin', 'Administrador Demo', 'admin@demo.com', 'password123', 'ADMIN')
-            ON CONFLICT (id) DO NOTHING
-        `);
-        console.log('✅ Usuarios de prueba sembrados.');
+        const hash = await bcrypt.hash(demoPassword, 10);
+        const users = [
+            ['user_demo_patient', 'Paciente Demo', 'paciente.herbhopper@gmail.com', 'PATIENT', '3001234567'],
+            ['user_demo_seller', 'Botanical Precision', 'vendedor.herbhopper@gmail.com', 'SELLER', '3007654321'],
+            ['user_demo_admin', 'Administrador Demo', 'admin.herbhopper@gmail.com', 'ADMIN', null]
+        ];
+        for (const [id, name, email, role, phone] of users) {
+            await pool.query(
+                'INSERT INTO users (id, name, email, password, role, phone) VALUES ($1,$2,$3,$4,$5,$6)',
+                [id, name, email, hash, role, phone]
+            );
+        }
 
-        console.log('🎉 ¡Migración completada exitosamente a Render PostgreSQL!');
+        await pool.query(`INSERT INTO stores (name, location, "licenseNumber", status) VALUES
+            ('Botanical Precision', 'Bogotá, Calle 100', 'LIC-9823', 'VERIFIED'),
+            ('Green Relief', 'Medellín, El Poblado', 'LIC-4512', 'PENDING'),
+            ('Nature''s Pharmacy', 'Cali, Av. Sexta', 'LIC-7731', 'VERIFIED')`);
+
+        console.log('🎉 Migración completada.');
+        console.log(`🔑 Contraseña de las cuentas demo: ${demoPassword}`);
         process.exit(0);
     } catch (err) {
         console.error('❌ Error durante la migración:', err.message);

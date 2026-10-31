@@ -3,46 +3,70 @@ package com.example.herbhopper_v1.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.herbhopper_v1.data.AppDatabase
 import com.example.herbhopper_v1.data.Store
-import com.example.herbhopper_v1.data.StoreDao
-import kotlinx.coroutines.flow.Flow
+import com.example.herbhopper_v1.data.network.ApiService
+import com.example.herbhopper_v1.data.network.StoreDto
+import com.example.herbhopper_v1.data.network.apiErrorMessage
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * Gobernanza de la red de sucursales. Las sucursales viven en la base de datos central
+ * (/api/stores), así que todos los administradores y dispositivos ven la misma lista.
+ */
 class AdminViewModel(application: Application) : AndroidViewModel(application) {
-    private val storeDao: StoreDao = AppDatabase.getDatabase(application).storeDao()
-    val allStores: Flow<List<Store>> = storeDao.getAllStores()
+    private val api = ApiService.instance
+
+    private val _allStores = MutableStateFlow<List<Store>>(emptyList())
+    val allStores: StateFlow<List<Store>> = _allStores
+
+    /** Porcentaje de integridad de la base de datos central (null mientras carga). */
+    private val _integrityPercent = MutableStateFlow<Int?>(null)
+    val integrityPercent: StateFlow<Int?> = _integrityPercent
+
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message
 
     init {
-        seedStores()
+        refresh()
     }
 
-    private fun seedStores() {
+    fun refresh() {
         viewModelScope.launch {
-            val initialStores = listOf(
-                Store(name = "Botanical Precision", location = "Bogotá, Calle 100", licenseNumber = "LIC-9823", status = "VERIFIED"),
-                Store(name = "Green Relief", location = "Medellín, El Poblado", licenseNumber = "LIC-4512", status = "PENDING"),
-                Store(name = "Nature's Pharmacy", location = "Cali, Av. Sexta", licenseNumber = "LIC-7731", status = "VERIFIED")
-            )
-            initialStores.forEach { storeDao.insertStore(it) }
+            try {
+                _allStores.value = api.getStores().map { it.toStore() }
+                _integrityPercent.value = api.getSystemHealth().integrityPercent
+            } catch (e: Exception) {
+                _message.value = e.apiErrorMessage()
+            }
         }
     }
 
-    fun insertStore(store: Store) {
+    fun consumeMessage() {
+        _message.value = null
+    }
+
+    fun insertStore(store: Store) = runAndRefresh {
+        api.createStore(StoreDto(name = store.name, location = store.location, licenseNumber = store.licenseNumber))
+    }
+
+    fun updateStore(store: Store) = runAndRefresh {
+        api.updateStore(store.id, StoreDto(store.id, store.name, store.location, store.licenseNumber, store.status))
+    }
+
+    fun deleteStore(store: Store) = runAndRefresh { api.deleteStore(store.id) }
+
+    private fun runAndRefresh(block: suspend () -> Unit) {
         viewModelScope.launch {
-            storeDao.insertStore(store)
+            try {
+                block()
+                refresh()
+            } catch (e: Exception) {
+                _message.value = e.apiErrorMessage()
+            }
         }
     }
 
-    fun updateStore(store: Store) {
-        viewModelScope.launch {
-            storeDao.updateStore(store)
-        }
-    }
-
-    fun deleteStore(store: Store) {
-        viewModelScope.launch {
-            storeDao.deleteStore(store)
-        }
-    }
+    private fun StoreDto.toStore() = Store(id = id, name = name, location = location, licenseNumber = licenseNumber, status = status)
 }

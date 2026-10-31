@@ -44,7 +44,51 @@ fun StoreGovernanceScreen(
     onLogout: () -> Unit = {},
     viewModel: com.example.herbhopper_v1.viewmodel.AdminViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    val stores by viewModel.allStores.collectAsState(initial = emptyList())
+    val stores by viewModel.allStores.collectAsState()
+    val integrityPercent by viewModel.integrityPercent.collectAsState()
+    val message by viewModel.message.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var showNewStoreDialog by remember { mutableStateOf(false) }
+    var newStoreName by remember { mutableStateOf("") }
+    var newStoreLocation by remember { mutableStateOf("") }
+    var newStoreLicense by remember { mutableStateOf("") }
+
+    LaunchedEffect(message) {
+        message?.let {
+            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.consumeMessage()
+        }
+    }
+
+    // Registro legal de una nueva sucursal: queda PENDIENTE hasta que se verifique
+    if (showNewStoreDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewStoreDialog = false },
+            title = { Text(stringResource(id = R.string.authorize_new_store)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = newStoreName, onValueChange = { newStoreName = it }, label = { Text(stringResource(id = R.string.store_name_label)) }, singleLine = true)
+                    OutlinedTextField(value = newStoreLocation, onValueChange = { newStoreLocation = it }, label = { Text(stringResource(id = R.string.store_location_label)) }, singleLine = true)
+                    OutlinedTextField(value = newStoreLicense, onValueChange = { newStoreLicense = it }, label = { Text(stringResource(id = R.string.store_license_label)) }, singleLine = true)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.insertStore(com.example.herbhopper_v1.data.Store(
+                            name = newStoreName.trim(),
+                            location = newStoreLocation.trim(),
+                            licenseNumber = newStoreLicense.trim()
+                        ))
+                        showNewStoreDialog = false
+                        newStoreName = ""; newStoreLocation = ""; newStoreLicense = ""
+                    },
+                    enabled = newStoreName.isNotBlank() && newStoreLocation.isNotBlank() && newStoreLicense.isNotBlank()
+                ) { Text(stringResource(id = R.string.save_btn)) }
+            },
+            dismissButton = { TextButton(onClick = { showNewStoreDialog = false }) { Text(stringResource(id = R.string.cancel_btn)) } }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -57,6 +101,9 @@ fun StoreGovernanceScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { onNavigate("support_inbox") }) {
+                        Icon(Icons.Default.SupportAgent, contentDescription = stringResource(id = R.string.support_inbox_title), tint = MaterialTheme.colorScheme.primary)
+                    }
                     IconButton(onClick = { onNavigate("admin_profile") }) {
                         Icon(Icons.Default.AccountCircle, contentDescription = "Perfil del Administrador", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                     }
@@ -80,13 +127,7 @@ fun StoreGovernanceScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 
                 Button(
-                    onClick = {
-                        viewModel.insertStore(com.example.herbhopper_v1.data.Store(
-                            name = "Nueva Tienda ${stores.size + 1}",
-                            location = "Ubicación",
-                            licenseNumber = "LIC-${(1000..9999).random()}"
-                        ))
-                    },
+                    onClick = { showNewStoreDialog = true },
                     modifier = Modifier.fillMaxWidth().height(64.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -132,11 +173,16 @@ fun StoreGovernanceScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(stringResource(id = R.string.database_integrity), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text(stringResource(id = R.string.db_integrity_progress), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                integrityPercent?.let { stringResource(id = R.string.db_integrity_value, it) } ?: "—",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         LinearProgressIndicator(
-                            progress = { 0.85f },
+                            progress = { (integrityPercent ?: 0) / 100f },
                             modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
                             color = MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.tertiaryContainer

@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.toArgb
  * @param amount       Monto total del pedido.
  * @param orderId      Referencia de la orden.
  * @param description  Descripción de la orden.
+ * @param paymentMethod Método elegido en el checkout; ePayco solo muestra ese medio de pago.
  * @param onBack       Callback para regresar.
  * @param onFinished   Callback al completar la transacción con el estado obtenido.
  */
@@ -44,6 +45,7 @@ fun EpaycoWebViewScreen(
     amount: Double,
     orderId: String,
     description: String,
+    paymentMethod: com.example.herbhopper_v1.viewmodel.PaymentMethod,
     onBack: () -> Unit,
     onFinished: (TransactionStatus) -> Unit
 ) {
@@ -58,8 +60,23 @@ fun EpaycoWebViewScreen(
     val orderName = remember { context.getString(R.string.order_epayco_title) }
 
     // Generar el HTML dinámico con el Script oficial de ePayco usando la llave del usuario
-    val htmlContent = remember(amount, orderId, description) {
+    val htmlContent = remember(amount, orderId, description, paymentMethod) {
         val amountInt = amount.toInt().toString()
+        val safeDescription = android.text.Html.escapeHtml(description)
+        val buyerName = android.text.Html.escapeHtml(com.example.herbhopper_v1.data.SessionManager.getName())
+        val buyerEmail = android.text.Html.escapeHtml(com.example.herbhopper_v1.data.SessionManager.getEmail())
+        val buyerPhone = com.example.herbhopper_v1.data.SessionManager.getPhone()?.filter { it.isDigit() }?.takeLast(10) ?: ""
+        // ePayco oculta los medios de pago listados en methodsDisable: solo queda el que eligió el usuario
+        val enabledMethod = when (paymentMethod) {
+            com.example.herbhopper_v1.viewmodel.PaymentMethod.CreditCard -> com.example.herbhopper_v1.data.network.EpaycoConfig.METHOD_CARD
+            com.example.herbhopper_v1.viewmodel.PaymentMethod.BankTransfer -> com.example.herbhopper_v1.data.network.EpaycoConfig.METHOD_PSE
+            com.example.herbhopper_v1.viewmodel.PaymentMethod.Cash -> com.example.herbhopper_v1.data.network.EpaycoConfig.METHOD_CASH
+        }
+        val methodsDisable = com.example.herbhopper_v1.data.network.EpaycoConfig.ALL_METHODS
+            .filter { it != enabledMethod }
+            .joinToString(",", "[", "]") { "&quot;$it&quot;" }
+        val responseUrl = com.example.herbhopper_v1.data.network.ApiService.PAYMENT_RESPONSE_URL
+        val confirmationUrl = com.example.herbhopper_v1.data.network.ApiService.PAYMENT_CONFIRMATION_URL
         val publicKey = com.example.herbhopper_v1.data.network.EpaycoConfig.PUBLIC_KEY
         val testMode = com.example.herbhopper_v1.data.network.EpaycoConfig.IS_TEST.toString()
         val bgColorHex = String.format("#%06X", (0xFFFFFF and EpaycoPortalBackground.toArgb()))
@@ -137,14 +154,19 @@ fun EpaycoWebViewScreen(
                     data-epayco-tax-ico="0.00"               
                     data-epayco-tax-base="$amountInt"
                     data-epayco-name="$orderName" 
-                    data-epayco-description="$description" 
+                    data-epayco-description="$safeDescription" 
                     data-epayco-currency="COP"    
                     data-epayco-country="CO" 
                     data-epayco-test="$testMode" 
                     data-epayco-external="false" 
+                    data-epayco-invoice="$orderId"
                     data-epayco-extra1="$orderId"
-                    data-epayco-response="https://herb-hopper-v2.onrender.com/api/payment/response"  
-                    data-epayco-confirmation="https://herb-hopper-v2.onrender.com/api/payment/confirmation"
+                    data-epayco-methodsdisable="$methodsDisable"
+                    data-epayco-name-billing="$buyerName"
+                    data-epayco-email-billing="$buyerEmail"
+                    data-epayco-mobilephone-billing="$buyerPhone"
+                    data-epayco-response="$responseUrl"
+                    data-epayco-confirmation="$confirmationUrl"
                     data-epayco-button="https://multimedia.epayco.co/dashboard/btns/btn5.png"> 
                 </script> 
             </form> 
@@ -242,10 +264,14 @@ fun EpaycoWebViewScreen(
                                     }
                                 }
                                 
-                                // Si el usuario cancela o regresa a una página local de éxito
-                                if (url.contains("herb-hopper-v2.onrender.com/api/payment/response")) {
+                                // Página de respuesta del backend al terminar en el checkout
+                                if (url.startsWith(com.example.herbhopper_v1.data.network.ApiService.PAYMENT_RESPONSE_URL)) {
                                     val refPayco = extractQueryParam(url, "ref_payco") ?: extractQueryParam(url, "refPayco")
-                                    if (refPayco != null) {
+                                    if (refPayco == null) {
+                                        // Sin referencia: el resultado llegará al backend por la URL de confirmación
+                                        onFinished(TransactionStatus.Pending(null, null))
+                                        return true
+                                    } else {
                                         coroutineScope.launch {
                                             isLoading = true
                                             val result = paymentRepository.confirmTransaction(refPayco)

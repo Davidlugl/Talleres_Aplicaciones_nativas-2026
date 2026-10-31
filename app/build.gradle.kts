@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
-    // alias(libs.plugins.google.gms)
 }
 
 android {
@@ -12,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.herbhopper_v1"
-        minSdk = 24
+        minSdk = 28 // Android 9.0 (Pie), requisito mínimo del manual
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -22,8 +21,9 @@ android {
             useSupportLibrary = true
         }
 
+        // Solo la llave PÚBLICA de ePayco va en la app. La privada y el P_KEY viven en el backend.
         buildConfigField("String", "EPAYCO_PUBLIC_KEY", "\"2c9d14c13dc6fe024fa7b30631344783\"")
-        buildConfigField("String", "EPAYCO_PRIVATE_KEY", "\"TU_LLAVE_PRIVADA_EPAYCO\"")
+        buildConfigField("boolean", "EPAYCO_TEST", "true")
     }
 
     buildTypes {
@@ -66,11 +66,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material.icons.extended)
 
-    // Firebase dependencies
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth)
-    implementation(libs.firebase.firestore)
-    implementation(libs.play.services.auth)
     implementation("com.google.android.gms:play-services-location:21.2.0")
 
     implementation(libs.androidx.room.runtime)

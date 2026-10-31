@@ -128,10 +128,8 @@
     <string name="on_the_way">EN CAMINO</string>
     <string name="tracking_msg">Tu pedido está siendo transportado con control térmico.</string>
     <string name="delivery_person">Repartidor</string>
-    <string name="delivery_name">Carlos Mendoza</string>
     <string name="vehicle_type">Vehículo Eléctrico</string>
     <string name="estimated_arrival">Llegada Estimada</string>
-    <string name="eta_time">14:45 PM</string>
 
     <!-- Seller Dashboard -->
     <string name="seller_dashboard_title">Dashboard del Vendedor</string>
@@ -248,8 +246,8 @@
     <string name="buyer_phone_placeholder">3001234567</string>
     <string name="buyer_doc_label">N° de Identificación (CC / CE)</string>
     <string name="buyer_address_label">Dirección de facturación</string>
-    <string name="bank_transfer_info_text">Serás redirigido al portal PSE de tu banco para completar el pago. Una vez confirmado, recibirás la notificación y tu pedido será procesado.</string>
-    <string name="cash_info_text">Genera un cupón de pago y cancela en puntos Efecty, Baloto o corresponsales bancarios. El cupón tiene vigencia de 24 horas.</string>
+    <string name="bank_transfer_info_text">En el checkout de ePayco elegirás tu banco y serás redirigido a PSE para el débito en tu cuenta de ahorros o corriente. El pedido se procesa cuando el banco confirma el pago.</string>
+    <string name="cash_info_text">ePayco genera un cupón de pago para cancelar en efectivo en puntos Efecty, Baloto u otros corresponsales. El cupón muestra su fecha límite; el pedido se procesa cuando ePayco confirma el pago.</string>
     <string name="order_reference_number">N° de referencia</string>
     <string name="payment_method_pse_desc">Pago electrónico seguro</string>
     <string name="payment_method_cash_desc">Efecty, Baloto, Corresponsales</string>
@@ -308,7 +306,6 @@
     <string name="role_admin">Administrador</string>
     <string name="close_btn">Cerrar</string>
     <string name="simulated_patient_name">Paciente Simulado</string>
-    <string name="simulated_admin_name">Admin Simulado</string>
 
     <!-- Secure Access -->
     <string name="email_and_password">Correo y Contraseña</string>
@@ -360,15 +357,12 @@
     <string name="verify_compliance_subtitle">Verify compliance and manage certifications.</string>
     <string name="total_verified_label">Total Verified</string>
     <string name="pending_review_label">Pending Review</string>
-    <string name="db_integrity_progress">85%% Complete</string>
 
     <!-- Additional Placeholders & Dummies -->
     <string name="add_user">Añadir Usuario</string>
     <string name="verify">Verificar</string>
     <string name="premium_grade">GRADO PREMIUM</string>
     <string name="herb_hopper_premium">Herb Hopper Premium</string>
-    <string name="map_placeholder">Marcador de Mapa</string>
-    <string name="bolt_ev_2">Bolt EV-2</string>
     <string name="empty_cart">Tu carrito está vacío</string>
     <string name="botanico">BOTÁNICO</string>
     <string name="no_products_available">No hay productos disponibles.</string>
@@ -377,18 +371,10 @@
     <string name="john_example_email">john@example.com</string>
     <string name="dummy_phone">+1 (555) 000-0000</string>
     <string name="dummy_password">••••••••</string>
-    <string name="dummy_sales_amount">$ 4.820.500 COP</string>
-    <string name="dummy_sales_increase">+12.5%% vs ayer</string>
-    <string name="dummy_new_orders">24</string>
-    <string name="dummy_order_id">#BP-88291</string>
-    <string name="dummy_order_date">12 Oct 2023</string>
-    <string name="dummy_order_product">Extracto de Salvia</string>
-    <string name="dummy_order_price">$ 42.500 COP</string>
 
     <!-- Toasts / Feedbacks -->
     <string name="toast_live_chat_started">Iniciando chat en vivo...</string>
     <string name="toast_email_client_opened">Abriendo cliente de correo...</string>
-    <string name="toast_services_restarting">Reiniciando servicios...</string>
     <string name="toast_help_opened">Abriendo centro de ayuda...</string>
     <string name="toast_settings_dev">Configuración en desarrollo...</string>
 
@@ -417,4 +403,154 @@
     <string name="colombia_prefix">+57 </string>
     <string name="phone_placeholder">3001234567</string>
 
+    <!-- ═══ Correcciones de cumplimiento del manual (v4.2.0) ═══ -->
+    <!-- Acceso y registro -->
+    <string name="biometric_enable_title">Activar acceso con huella</string>
+    <string name="biometric_enable_message">¿Deseas entrar con tu huella la próxima vez? Se guardará en este teléfono un token de acceso cifrado (AES-256, Android Keystore) que solo se desbloquea con tu huella. Tu contraseña no se guarda.</string>
+    <string name="biometric_enable_accept">Activar</string>
+    <string name="biometric_enable_decline">Ahora no</string>
+    <string name="biometric_enabled_toast">Acceso con huella activado</string>
+    <string name="password_rules_hint">Falta: %1$s</string>
+    <string name="password_rules_ok">La contraseña cumple la política de seguridad</string>
+    <string name="data_policy_consent">Autorizo el tratamiento de mis datos personales y de salud según la política de privacidad de HerbHopper (Ley 1581 de 2012).</string>
+    <string name="toast_weak_password">La contraseña debe tener mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.</string>
+    <string name="toast_accept_data_policy">Debes autorizar el tratamiento de datos personales para crear la cuenta.</string>
+
+    <!-- Perfil -->
+    <string name="toast_changes_saved">Cambios guardados</string>
+    <string name="change_password_title">Cambiar contraseña</string>
+    <string name="new_password_label">Nueva contraseña</string>
+    <string name="change_password_btn">Actualizar contraseña</string>
+    <string name="toast_password_changed">Contraseña actualizada. Si usabas la huella, vuelve a activarla.</string>
+    <string name="delete_account_title">Eliminar cuenta</string>
+    <string name="delete_account_message">Se eliminarán tu cuenta y tus datos del servidor. Esta acción no se puede deshacer.</string>
+    <string name="delete_account_btn">Eliminar mi cuenta</string>
+    <string name="preferred_payment_title">Método de pago preferido</string>
+    <string name="preferred_payment_info">Los datos de tu tarjeta se ingresan únicamente en el checkout seguro de ePayco; HerbHopper no los solicita ni los almacena.</string>
+
+    <!-- Catálogo y detalle -->
+    <string name="clinical_benefits">Beneficios clínicos</string>
+    <string name="requires_prescription_chip">Requiere fórmula médica</string>
+    <string name="stock_available">%1$d unidades disponibles</string>
+    <string name="out_of_stock">Agotado</string>
+
+    <!-- Checkout y pagos -->
+    <string name="checkout_price_includes_taxes">Precio final en COP con impuestos incluidos</string>
+    <string name="checkout_address_title">Dirección de entrega</string>
+    <string name="checkout_no_addresses">No tienes direcciones guardadas. Agrega una (puedes usar tu ubicación GPS).</string>
+    <string name="checkout_manage_addresses">Agregar o cambiar dirección</string>
+    <string name="checkout_prescription_title">Fórmula médica</string>
+    <string name="checkout_prescription_required">Tu carrito incluye productos de control especial. Selecciona una fórmula cargada; el dispensario la verificará antes de despachar.</string>
+    <string name="checkout_empty_cart">El carrito está vacío</string>
+    <string name="checkout_missing_address">Selecciona o agrega una dirección de entrega</string>
+    <string name="checkout_missing_prescription">Carga tu fórmula médica antes de pagar</string>
+    <string name="card_info_text">Digitarás los datos de la tarjeta (número, titular, vencimiento y CVV) en el checkout oficial de ePayco, certificado PCI DSS. HerbHopper no ve ni guarda esos datos.</string>
+    <string name="payment_status_label">Pago</string>
+    <string name="payment_status_approved">Aprobado</string>
+    <string name="payment_status_pending">Pendiente</string>
+    <string name="payment_status_rejected">Rechazado</string>
+    <string name="payment_reference_label">Referencia ePayco</string>
+    <string name="payment_method_label">Medio de pago</string>
+
+    <!-- Fórmulas médicas -->
+    <string name="upload_prescription_btn">Cargar fórmula</string>
+    <string name="prescription_label">Fórmula médica</string>
+    <string name="prescription_item_title">Fórmula #%1$d · Dr(a). %2$s</string>
+    <string name="prescription_status_approved">Aprobada</string>
+    <string name="prescription_status_rejected">Rechazada</string>
+    <string name="prescription_status_pending">En revisión (máximo 24 h)</string>
+    <string name="prescription_status_none">Sin fórmula</string>
+    <string name="my_prescriptions_title">Mis fórmulas</string>
+    <string name="no_prescriptions">Aún no has cargado fórmulas.</string>
+    <string name="prescription_review_title">Verifica tu fórmula</string>
+    <string name="prescription_checklist">Deben verse con claridad: nombre y registro médico del profesional, sello de la institución y firma.</string>
+    <string name="doctor_name_label">Nombre del médico</string>
+    <string name="doctor_registry_label">Registro médico</string>
+    <string name="send_for_validation_btn">Enviar</string>
+    <string name="toast_doctor_data_required">Escribe el nombre y el registro médico del profesional</string>
+    <string name="toast_prescription_sent">Fórmula enviada. Un farmacéutico la revisará en máximo 24 horas.</string>
+    <string name="prescription_doctor_info">Médico: %1$s · Registro: %2$s</string>
+    <string name="view_prescription_btn">Ver fórmula</string>
+    <string name="approve_btn">Aprobar</string>
+    <string name="reject_btn">Rechazar</string>
+    <string name="reject_prescription_title">Rechazar fórmula</string>
+    <string name="reject_reason_label">Motivo del rechazo</string>
+    <string name="prescription_approved_toast">Fórmula aprobada</string>
+    <string name="prescription_rejected_toast">Fórmula rechazada</string>
+
+    <!-- Pedidos y rastreo -->
+    <string name="order_label">Pedido</string>
+    <string name="products_label">Productos</string>
+    <string name="delivery_address_title">Entrega</string>
+    <string name="open_in_maps">Ver en el mapa</string>
+    <string name="no_maps_app">No hay una aplicación de mapas instalada</string>
+    <string name="refresh">Actualizar</string>
+    <string name="tracking_step_received">Pedido recibido</string>
+    <string name="tracking_step_preparing">Aceptado · en preparación</string>
+    <string name="tracking_step_delivered">Entregado</string>
+    <string name="tracking_step_cancelled">Pedido cancelado</string>
+    <string name="cancel_order_btn">Cancelar pedido</string>
+    <string name="order_cancelled_toast">Pedido cancelado</string>
+    <string name="order_accepted_toast">Pedido aceptado</string>
+    <string name="status_pending">PENDIENTE</string>
+    <string name="status_accepted">ACEPTADO</string>
+    <string name="status_cancelled">CANCELADO</string>
+    <string name="status_delivered">ENTREGADO</string>
+    <string name="no_incoming_orders">No hay pedidos</string>
+    <string name="no_incoming_orders_desc">Cuando un paciente realice una compra, aparecerá aquí.</string>
+
+    <!-- Vendedor: dashboard e inventario -->
+    <string name="paid_orders_today">%1$d pagos aprobados hoy</string>
+    <string name="no_stock_alerts">Ningún producto está por debajo de su stock mínimo.</string>
+    <string name="min_stock_label">Mínimo de seguridad: %1$d</string>
+    <string name="units_count">%1$d unidades</string>
+    <string name="reorder_title">Reordenar %1$s</string>
+    <string name="reorder_message">Stock actual: %1$d · mínimo: %2$d. La solicitud llegará al administrador de suministros.</string>
+    <string name="reorder_quantity_label">Cantidad a solicitar</string>
+    <string name="stock_label">Stock (unidades)</string>
+    <string name="min_stock_input_label">Stock mínimo</string>
+    <string name="technical_sheet_title">Ficha técnica</string>
+    <string name="thc_percent_label" formatted="false">THC (%)</string>
+    <string name="thc_rule_hint" formatted="false">Con 1 % de THC o más, el producto exige fórmula médica (Decreto 811 de 2021).</string>
+    <string name="toast_price_positive">El precio debe ser mayor a cero</string>
+    <string name="toast_thc_range">El porcentaje de THC debe estar entre 0 y 100</string>
+    <string name="product_saved_toast">Producto guardado</string>
+    <string name="image_uploaded_toast">Imagen subida</string>
+    <string name="image_upload_error">Error al subir la imagen</string>
+    <string name="tap_to_upload_image">Toca para cargar una imagen</string>
+
+    <!-- Administrador -->
+    <string name="restart_confirm_title">Reiniciar servicios</string>
+    <string name="restart_confirm_message">Se reciclarán las conexiones de la API con la base de datos y se repetirá el diagnóstico. Las peticiones en curso pueden fallar durante unos segundos.</string>
+    <string name="restart_btn">Reiniciar</string>
+    <string name="api_label">API HerbHopper</string>
+    <string name="database_label">Base de datos PostgreSQL</string>
+    <string name="db_integrity_title">Integridad de la base de datos</string>
+    <string name="db_integrity_value">%1$d %% de verificaciones superadas</string>
+    <string name="system_counts">Usuarios: %1$d · Productos: %2$d · Pedidos: %3$d · Fórmulas por revisar: %4$d</string>
+    <string name="restock_requests_title">Solicitudes de reabastecimiento</string>
+    <string name="no_restock_requests">No hay solicitudes pendientes.</string>
+    <string name="restock_detail">Solicita %1$d u. · stock actual %2$d</string>
+    <string name="fulfill_btn">Atender</string>
+    <string name="no_audit_logs">No hay eventos registrados.</string>
+    <string name="store_name_label">Nombre de la sucursal</string>
+    <string name="store_location_label">Ciudad y dirección</string>
+    <string name="store_license_label">Número de licencia</string>
+    <string name="analytics_sales">Ventas con pago aprobado</string>
+    <string name="analytics_active_users">Usuarios activos</string>
+    <string name="analytics_orders">Pedidos</string>
+    <string name="analytics_approved_payments">%1$d pagados</string>
+    <string name="analytics_orders_by_status">Pedidos por estado</string>
+    <string name="analytics_sales_by_method">Ventas por medio de pago</string>
+    <string name="analytics_users_by_role">Usuarios por rol</string>
+    <string name="no_data_yet">Aún no hay datos.</string>
+
+    <!-- Soporte -->
+    <string name="chat_title">Soporte HerbHopper</string>
+    <string name="chat_subtitle">Te responderemos en este chat</string>
+    <string name="chat_welcome">Hola. Escribe tu consulta y el equipo de soporte te responderá aquí mismo.</string>
+    <string name="support_inbox_title">Mesa de ayuda</string>
+    <string name="support_inbox_empty">No hay conversaciones de soporte.</string>
+    <string name="support_awaiting_reply">SIN RESPONDER</string>
+    <string name="support_reply_hint">Escribe la respuesta…</string>
 </resources>
