@@ -128,15 +128,20 @@ fun ProductDetailsScreen(
 
                 // Specs Grid
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SpecCard(label = stringResource(id = R.string.concentration), value = "10% CBD", modifier = Modifier.weight(1f), isHighlighted = true)
-                    SpecCard(label = stringResource(id = R.string.thc_content), value = "<0.2% THC", modifier = Modifier.weight(1f))
+                    SpecCard(label = stringResource(id = R.string.concentration), value = product.cbdConcentration ?: "—", modifier = Modifier.weight(1f), isHighlighted = true)
+                    SpecCard(label = stringResource(id = R.string.thc_content), value = String.format(java.util.Locale("es", "CO"), "%.1f %% THC", product.thcPercent), modifier = Modifier.weight(1f))
+                }
+
+                if (product.requiresPrescription) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    BenefitChip(icon = Icons.Default.Description, label = stringResource(id = R.string.requires_prescription_chip))
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(stringResource(id = R.string.description), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Text(
-                    product.description,
+                    product.description ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp)
@@ -144,11 +149,17 @@ fun ProductDetailsScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Benefits Chips
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    BenefitChip(icon = Icons.Default.Spa, label = stringResource(id = R.string.relaxation))
-                    BenefitChip(icon = Icons.Default.HealthAndSafety, label = stringResource(id = R.string.anti_inflammatory))
+                // Beneficios clínicos del producto
+                product.benefits?.let { benefits ->
+                    InfoRow(icon = Icons.Default.HealthAndSafety, title = stringResource(id = R.string.clinical_benefits), description = benefits)
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (product.stock > 0) stringResource(id = R.string.stock_available, product.stock) else stringResource(id = R.string.out_of_stock),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (product.stock > 0) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
+                )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -161,13 +172,14 @@ fun ProductDetailsScreen(
                 ) {
                     Column(modifier = Modifier.padding(24.dp)) {
                         Row(verticalAlignment = Alignment.Bottom) {
-                            Text("$${String.format("%,.0f", product.price)} COP", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-                            Text(stringResource(id = R.string.per_bottle, "30ml"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp, bottom = 4.dp))
+                            Text(formatCop(product.price), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
                         }
+                        Text(stringResource(id = R.string.checkout_price_includes_taxes), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(24.dp))
                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Button(
                                 onClick = { onAddToCart(product) },
+                                enabled = product.stock > 0,
                                 modifier = Modifier.fillMaxWidth().height(56.dp),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -183,9 +195,9 @@ fun ProductDetailsScreen(
                 Spacer(modifier = Modifier.height(48.dp))
 
                 // Usage Section
-                InfoRow(icon = Icons.Default.MedicalServices, title = stringResource(id = R.string.usage_mode), description = "Aplicar 2-3 gotas debajo de la lengua (sublingual), mantener por 60 segundos antes de tragar.")
+                InfoRow(icon = Icons.Default.MedicalServices, title = stringResource(id = R.string.usage_mode), description = product.usageMode ?: "—")
                 Spacer(modifier = Modifier.height(24.dp))
-                InfoRow(icon = Icons.Default.Science, title = stringResource(id = R.string.certification), description = "Laboratorio certificado ISO-9001. Tercera parte probada para pureza y potencia.")
+                InfoRow(icon = Icons.Default.Science, title = stringResource(id = R.string.certification), description = product.certifications ?: "—")
 
                 Spacer(modifier = Modifier.height(64.dp))
             }

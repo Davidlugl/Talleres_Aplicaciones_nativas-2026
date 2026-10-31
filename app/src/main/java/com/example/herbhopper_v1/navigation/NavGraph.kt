@@ -8,27 +8,51 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.herbhopper_v1.data.Product
+import com.example.herbhopper_v1.data.SessionManager
 import com.example.herbhopper_v1.ui.admin.*
-import com.example.herbhopper_v1.ui.admin.crud.ProductCrudScreen
-import com.example.herbhopper_v1.ui.admin.AdminProfileScreen
 import com.example.herbhopper_v1.ui.patient.*
 import com.example.herbhopper_v1.ui.seller.*
 import com.example.herbhopper_v1.viewmodel.CartViewModel
 import com.example.herbhopper_v1.viewmodel.OrderViewModel
+import com.example.herbhopper_v1.viewmodel.PaymentMethod
 import com.example.herbhopper_v1.viewmodel.ProductViewModel
+import com.example.herbhopper_v1.viewmodel.ProfileViewModel
 import com.example.herbhopper_v1.viewmodel.TransactionStatus
+
+/** Pantalla inicial de cada rol. */
+private fun homeRouteFor(role: String): String = when (role.uppercase()) {
+    "ADMIN" -> "store_governance"
+    "SELLER" -> "seller_dashboard"
+    else -> "catalog"
+}
 
 @Composable
 fun NavGraph(navController: NavHostController) {
     val cartViewModel: CartViewModel = viewModel()
     val productViewModel: ProductViewModel = viewModel()
     val orderViewModel: OrderViewModel = viewModel()
+    val profileViewModel: ProfileViewModel = viewModel()
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     val cartItems by cartViewModel.items.collectAsState()
-    // Estado del resultado de pago para pasarlo a la pantalla de confirmación
+
+    // Datos del pedido en curso para ePayco y la pantalla de confirmación
     var lastPaymentStatus by remember { mutableStateOf<TransactionStatus>(TransactionStatus.Idle) }
     var lastOrderId by remember { mutableStateOf("") }
     var lastOrderAmount by remember { mutableStateOf(0.0) }
+    var lastPaymentMethod by remember { mutableStateOf<PaymentMethod>(PaymentMethod.CreditCard) }
+
+    /** Entra al inicio del rol y limpia la pila (no se puede volver al login con "atrás"). */
+    fun goHome(role: String) {
+        navController.navigate(homeRouteFor(role)) { popUpTo(0) { inclusive = true } }
+    }
+
+    /** Cierra sesión (revoca el token en el servidor) y vuelve al acceso. */
+    fun logout() {
+        profileViewModel.logout {
+            cartViewModel.clearCart()
+            navController.navigate("secure_access") { popUpTo(0) { inclusive = true } }
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -36,52 +60,61 @@ fun NavGraph(navController: NavHostController) {
     ) {
         composable("splash") {
             SplashScreen(onTimeout = {
-                navController.navigate("secure_access") {
-                    popUpTo("splash") { inclusive = true }
+                // Sesión guardada (token cifrado): entra directo al inicio de su rol
+                if (SessionManager.isLoggedIn() && SessionManager.getAccessToken() != null) {
+                    goHome(SessionManager.getRole())
+                } else {
+                    navController.navigate("secure_access") { popUpTo("splash") { inclusive = true } }
                 }
             })
         }
-        // Patient Flow
+
+        // ─── Acceso ────────────────────────────────────────────────────────
         composable("secure_access") {
             SecureAccessScreen(
-                onGoogleLogin = { navController.navigate("catalog") },
+                onGoogleLogin = { navController.navigate("login") },
                 onBiometricClick = { navController.navigate("login") },
                 onPinClick = { navController.navigate("login") },
                 onSignUpClick = { navController.navigate("create_account") },
                 onForgotPasswordClick = { navController.navigate("forgot_password") },
-                onAdminAccess = { navController.navigate("store_governance") },
-                onSellerAccess = { navController.navigate("seller_dashboard") }
+                onAdminAccess = { navController.navigate("login") },
+                onSellerAccess = { navController.navigate("login") }
             )
         }
         composable("forgot_password") {
             ForgotPasswordScreen(onBack = { navController.popBackStack() })
         }
-        composable("login") { 
+        composable("login") {
             LoginScreen(
-                onPatientSuccess = { navController.navigate("catalog") },
-                onSellerSuccess = { navController.navigate("seller_dashboard") },
-                onAdminSuccess = { navController.navigate("store_governance") },
+                onPatientSuccess = { goHome("PATIENT") },
+                onSellerSuccess = { goHome("SELLER") },
+                onAdminSuccess = { goHome("ADMIN") },
                 onForgotPasswordClick = { navController.navigate("forgot_password") },
-                onSignUpClick = { navController.navigate("create_account") }
-            ) 
-        }
-        composable("create_account") { 
-            CreateAccountScreen(
-                onSignUpSuccess = { navController.navigate("catalog") },
-                onLoginClick = { navController.navigate("secure_access") }
+                onSignUpClick = { navController.navigate("create_account") },
+                profileViewModel = profileViewModel
             )
         }
-        composable("home") { 
+        composable("create_account") {
+            CreateAccountScreen(
+                onSignUpSuccess = { goHome("PATIENT") },
+                onSellerSignUpSuccess = { goHome("SELLER") },
+                onLoginClick = { navController.navigate("login") },
+                profileViewModel = profileViewModel
+            )
+        }
+
+        // ─── Paciente ──────────────────────────────────────────────────────
+        composable("home") {
             MainMenuScreen(
-                onLogout = { navController.navigate("secure_access") },
+                onLogout = { logout() },
                 onCatalogClick = { navController.navigate("catalog") },
                 onOrdersClick = { navController.navigate("order_history") },
                 onPrescriptionClick = { navController.navigate("prescription_validation") },
                 onProfileClick = { navController.navigate("profile") },
                 onHelpClick = { navController.navigate("help_center") }
-            ) 
+            )
         }
-        composable("catalog") { 
+        composable("catalog") {
             CatalogScreen(
                 productViewModel = productViewModel,
                 onProductClick = { product ->
@@ -97,7 +130,7 @@ fun NavGraph(navController: NavHostController) {
                 onProfileClick = { navController.navigate("profile") }
             )
         }
-        composable("product_details") { 
+        composable("product_details") {
             selectedProduct?.let { product ->
                 ProductDetailsScreen(
                     product = product,
@@ -108,83 +141,34 @@ fun NavGraph(navController: NavHostController) {
                 )
             }
         }
-        composable("prescription_validation") { 
+        composable("prescription_validation") {
             PrescriptionValidationScreen(
                 onBack = { navController.popBackStack() },
                 onHelpClick = { navController.navigate("help_center") }
-            ) 
+            )
         }
-        composable("cart") { 
+        composable("cart") {
             CartScreen(
                 viewModel = cartViewModel,
                 onBack = { navController.popBackStack() },
                 onCheckout = { navController.navigate("checkout") }
-            ) 
+            )
         }
         composable("checkout") {
-            val total = cartItems.sumOf { it.product.price * it.quantity }
-            val orderId = remember { "ORD-${(1000..9999).random()}-${System.currentTimeMillis() % 10000}" }
-            val description = remember {
-                cartItems.take(2).joinToString(", ") { it.product.name }.let {
-                    if (cartItems.size > 2) "$it y ${cartItems.size - 2} más" else it
-                }.ifBlank { "Pedido HerbHopper" }
-            }
-
+            // Referencia única del pedido: es también la factura (x_id_invoice) en ePayco
+            val orderId = remember { "HH-${System.currentTimeMillis()}-${(100..999).random()}" }
             CheckoutScreen(
-                totalAmount      = total,
-                orderId          = orderId,
-                orderDescription = description,
-                onBack           = { navController.popBackStack() },
-                onPaymentResult  = { status ->
-                    // 1. Guardar estado para pasarlo a la pantalla de confirmación
-                    lastPaymentStatus = status
-                    lastOrderId       = orderId
-                    lastOrderAmount   = total
-
-                    // 2. Persistir la orden solo si el pago fue exitoso o pendiente (como el Efectivo)
-                    if (status is TransactionStatus.Accepted || status is TransactionStatus.Pending) {
-                        if (cartItems.isNotEmpty()) {
-                            val orderItems = cartItems.map { cartItem ->
-                                com.example.herbhopper_v1.data.OrderItem(
-                                    productId   = cartItem.product.id,
-                                    productName = cartItem.product.name,
-                                    quantity    = cartItem.quantity,
-                                    price       = cartItem.product.price
-                                )
-                            }
-                            val itemsJson = com.google.gson.Gson().toJson(orderItems)
-                            val paymentKey = when (status) {
-                                is TransactionStatus.Accepted -> "CREDIT_CARD"
-                                is TransactionStatus.Pending  -> "CASH"
-                                else                          -> "UNKNOWN"
-                            }
-                            val newOrder = com.example.herbhopper_v1.data.Order(
-                                orderId       = orderId,
-                                userId        = "david_g",
-                                userName      = "David G.",
-                                itemsJson     = itemsJson,
-                                totalAmount   = total,
-                                status        = "PENDING",
-                                timestamp     = System.currentTimeMillis(),
-                                address       = "Bogotá, Colombia",
-                                paymentMethod = paymentKey
-                            )
-                            orderViewModel.placeOrder(newOrder)
-                        }
-                        cartViewModel.clearCart()
-                    }
-
-                    // 3. Navegar a la pantalla de confirmación
-                    navController.navigate("payment_confirmation") {
-                        popUpTo("checkout") { inclusive = true }
-                    }
-                },
-                onLaunchWebCheckout = { amount, oId, desc ->
-                    // Guardar los datos del pedido en el NavGraph para la siguiente pantalla
-                    lastOrderId     = oId
-                    lastOrderAmount = amount
+                cartItems = cartItems,
+                orderId = orderId,
+                onBack = { navController.popBackStack() },
+                onOrderCreated = { order, method ->
+                    lastOrderId = order.orderId
+                    lastOrderAmount = order.totalAmount // total recalculado por el servidor
+                    lastPaymentMethod = method
                     navController.navigate("epayco_webview")
-                }
+                },
+                onManageAddresses = { navController.navigate("profile_settings/${ProfileOptionDestination.ADDRESSES.key}") },
+                onUploadPrescription = { navController.navigate("prescription_validation") }
             )
         }
         composable("epayco_webview") {
@@ -192,45 +176,20 @@ fun NavGraph(navController: NavHostController) {
                 amount = lastOrderAmount,
                 orderId = lastOrderId,
                 description = "Pedido HerbHopper - $lastOrderId",
-                onBack = { navController.popBackStack() },
+                paymentMethod = lastPaymentMethod,
+                onBack = {
+                    // El usuario abandonó el pago: se anula el pedido y se libera el stock reservado
+                    orderViewModel.cancelMyOrder(lastOrderId)
+                    navController.popBackStack("checkout", inclusive = true)
+                },
                 onFinished = { status ->
-                    // 1. Guardar el estado de la transacción para la pantalla de confirmación
                     lastPaymentStatus = status
-
-                    // 2. Persistir la orden solo si el pago fue exitoso o pendiente
-                    if (status is TransactionStatus.Accepted || status is TransactionStatus.Pending) {
-                        if (cartItems.isNotEmpty()) {
-                            val orderItems = cartItems.map { cartItem ->
-                                com.example.herbhopper_v1.data.OrderItem(
-                                    productId   = cartItem.product.id,
-                                    productName = cartItem.product.name,
-                                    quantity    = cartItem.quantity,
-                                    price       = cartItem.product.price
-                                )
-                            }
-                            val itemsJson = com.google.gson.Gson().toJson(orderItems)
-                            val paymentKey = when (status) {
-                                is TransactionStatus.Accepted -> "CREDIT_CARD"
-                                is TransactionStatus.Pending  -> "PSE_OR_CASH"
-                                else                          -> "UNKNOWN"
-                            }
-                            val newOrder = com.example.herbhopper_v1.data.Order(
-                                orderId       = lastOrderId,
-                                userId        = "david_g",
-                                userName      = "David G.",
-                                itemsJson     = itemsJson,
-                                totalAmount   = lastOrderAmount,
-                                status        = "PENDING",
-                                timestamp     = System.currentTimeMillis(),
-                                address       = "Bogotá, Colombia",
-                                paymentMethod = paymentKey
-                            )
-                            orderViewModel.placeOrder(newOrder)
-                        }
-                        cartViewModel.clearCart()
+                    when (status) {
+                        is TransactionStatus.Accepted, is TransactionStatus.Pending -> cartViewModel.clearCart()
+                        is TransactionStatus.Rejected -> orderViewModel.cancelMyOrder(lastOrderId)
+                        else -> Unit // Error de consulta: el resultado real llega al backend por la confirmación de ePayco
                     }
-
-                    // 3. Navegar a la pantalla de confirmación final
+                    orderViewModel.refresh()
                     navController.navigate("payment_confirmation") {
                         popUpTo("checkout") { inclusive = true }
                     }
@@ -239,11 +198,11 @@ fun NavGraph(navController: NavHostController) {
         }
         composable("payment_confirmation") {
             PaymentConfirmationScreen(
-                status       = lastPaymentStatus,
-                orderId      = lastOrderId,
-                totalAmount  = lastOrderAmount,
+                status = lastPaymentStatus,
+                orderId = lastOrderId,
+                totalAmount = lastOrderAmount,
                 onGoToOrders = {
-                    navController.navigate("order_history") {
+                    navController.navigate("order_tracking/$lastOrderId") {
                         popUpTo("payment_confirmation") { inclusive = true }
                     }
                 },
@@ -254,23 +213,29 @@ fun NavGraph(navController: NavHostController) {
                 }
             )
         }
-        composable("order_history") { 
+        composable("order_history") {
             OrderHistoryScreen(
                 viewModel = orderViewModel,
                 onHomeClick = { navController.navigate("catalog") },
                 onOrdersClick = { },
                 onScriptsClick = { navController.navigate("prescription_validation") },
                 onProfileClick = { navController.navigate("profile") },
-                onCartClick = { navController.navigate("cart") }
+                onCartClick = { navController.navigate("cart") },
+                onOrderClick = { orderId -> navController.navigate("order_tracking/$orderId") }
             )
         }
-        composable("order_tracking") { 
+        composable(
+            "order_tracking/{orderId}",
+            arguments = listOf(navArgument("orderId") { type = NavType.StringType })
+        ) { backStackEntry ->
             OrderTrackingScreen(
+                orderId = backStackEntry.arguments?.getString("orderId") ?: "",
+                viewModel = orderViewModel,
+                onBack = { navController.popBackStack() },
                 onHomeClick = { navController.navigate("catalog") },
                 onOrdersClick = { navController.navigate("order_history") },
                 onScriptsClick = { navController.navigate("prescription_validation") },
-                onProfileClick = { navController.navigate("profile") },
-                onCartClick = { navController.navigate("cart") }
+                onProfileClick = { navController.navigate("profile") }
             )
         }
         composable("profile") {
@@ -278,8 +243,9 @@ fun NavGraph(navController: NavHostController) {
                 onHomeClick = { navController.navigate("catalog") },
                 onOrdersClick = { navController.navigate("order_history") },
                 onScriptsClick = { navController.navigate("prescription_validation") },
-                onLogout = { navController.navigate("secure_access") },
-                onOptionClick = { option -> navController.navigate("profile_settings/$option") }
+                onLogout = { logout() },
+                onOptionClick = { option -> navController.navigate("profile_settings/$option") },
+                viewModel = profileViewModel
             )
         }
         composable(
@@ -287,7 +253,14 @@ fun NavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("option") { type = NavType.StringType })
         ) { backStackEntry ->
             val option = backStackEntry.arguments?.getString("option") ?: ""
-            ProfileSettingsScreen(title = option, onBack = { navController.popBackStack() })
+            ProfileSettingsScreen(
+                title = option,
+                onBack = { navController.popBackStack() },
+                onAccountDeleted = {
+                    cartViewModel.clearCart()
+                    navController.navigate("secure_access") { popUpTo(0) { inclusive = true } }
+                }
+            )
         }
         composable("help_center") {
             HelpCenterScreen(
@@ -299,24 +272,26 @@ fun NavGraph(navController: NavHostController) {
             ChatScreen(onBack = { navController.popBackStack() })
         }
 
-        // Seller Flow
-        composable("seller_dashboard") { 
+        // ─── Vendedor ──────────────────────────────────────────────────────
+        composable("seller_dashboard") {
             SellerDashboardScreen(
                 viewModel = productViewModel,
+                orderViewModel = orderViewModel,
                 onNavigate = { navController.navigate(it) }
-            ) 
+            )
         }
-        composable("inventory") { 
+        composable("inventory") {
             InventoryScreen(
                 viewModel = productViewModel,
                 onBack = { navController.popBackStack() },
                 onNavigate = { navController.navigate(it) },
                 onAddProduct = { navController.navigate("inventory_crud") },
                 onEditProduct = { productId -> navController.navigate("inventory_crud/$productId") }
-            ) 
+            )
         }
         composable("inventory_crud") {
             InventoryCrudScreen(
+                viewModel = productViewModel,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -324,51 +299,50 @@ fun NavGraph(navController: NavHostController) {
             "inventory_crud/{productId}",
             arguments = listOf(navArgument("productId") { type = NavType.IntType })
         ) { backStackEntry ->
-            val productId = backStackEntry.arguments?.getInt("productId")
             InventoryCrudScreen(
-                productId = productId,
+                productId = backStackEntry.arguments?.getInt("productId"),
+                viewModel = productViewModel,
                 onBack = { navController.popBackStack() }
             )
         }
-        composable("incoming_orders") { 
+        composable("incoming_orders") {
             IncomingOrdersScreen(
                 onBack = { navController.popBackStack() },
                 onNavigate = { navController.navigate(it) },
                 viewModel = orderViewModel
-            ) 
+            )
         }
         composable(
             "order_details/{orderId}",
             arguments = listOf(navArgument("orderId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             OrderDetailsScreen(
-                orderId = orderId,
+                orderId = backStackEntry.arguments?.getString("orderId") ?: "",
                 onBack = { navController.popBackStack() },
                 viewModel = orderViewModel
             )
         }
-        composable("store_profile") { 
+        composable("store_profile") {
             StoreProfileScreen(
                 onBack = { navController.popBackStack() },
                 onNavigate = { navController.navigate(it) },
-                onLogout = { navController.navigate("secure_access") },
+                onLogout = { logout() },
                 onOptionClick = { option -> navController.navigate("profile_settings/$option") }
-            ) 
+            )
         }
 
-        // Admin Flow
-        composable("store_governance") { 
+        // ─── Administrador ─────────────────────────────────────────────────
+        composable("store_governance") {
             StoreGovernanceScreen(
                 onNavigate = { navController.navigate(it) },
-                onLogout = { navController.navigate("secure_access") }
+                onLogout = { logout() }
             )
         }
         composable("admin_profile") {
             AdminProfileScreen(
                 onBack = { navController.popBackStack() },
                 onNavigate = { navController.navigate(it) },
-                onLogout = { navController.navigate("secure_access") }
+                onLogout = { logout() }
             )
         }
         composable("user_management") {
@@ -377,15 +351,17 @@ fun NavGraph(navController: NavHostController) {
                 onNavigate = { navController.navigate(it) }
             )
         }
-        composable("audit_panel") { 
-            AuditPanelScreen(onNavigate = { navController.navigate(it) }) 
+        composable("audit_panel") {
+            AuditPanelScreen(onNavigate = { navController.navigate(it) })
         }
-        composable("global_analytics") { 
-            GlobalAnalyticsScreen(onNavigate = { navController.navigate(it) }) 
+        composable("global_analytics") {
+            GlobalAnalyticsScreen(onNavigate = { navController.navigate(it) })
         }
-        composable("system_infrastructure") { 
-            SystemInfrastructureScreen(onNavigate = { navController.navigate(it) }) 
+        composable("system_infrastructure") {
+            SystemInfrastructureScreen(onNavigate = { navController.navigate(it) })
         }
-        composable("product_crud") { ProductCrudScreen() }
+        composable("support_inbox") {
+            SupportInboxScreen(onBack = { navController.popBackStack() })
+        }
     }
 }

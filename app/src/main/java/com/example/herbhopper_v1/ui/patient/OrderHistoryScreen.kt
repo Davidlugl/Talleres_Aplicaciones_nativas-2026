@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.items
  * @param onScriptsClick Función callback para navegar a la sección de Recetas.
  * @param onProfileClick Función callback para navegar a la sección de Perfil.
  * @param onCartClick Función callback para navegar a la sección de Carrito de Compras.
+ * @param onOrderClick Abre el rastreo del pedido seleccionado.
  * @param viewModel Instancia de [OrderViewModel] para la consulta y flujo de pedidos.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,9 +48,12 @@ fun OrderHistoryScreen(
     onScriptsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onCartClick: () -> Unit = {},
+    onOrderClick: (String) -> Unit = {},
     viewModel: com.example.herbhopper_v1.viewmodel.OrderViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    val orders by viewModel.getOrdersByUser("david_g").collectAsState(initial = emptyList())
+    // El servidor solo devuelve los pedidos del paciente autenticado
+    val orders by viewModel.orders.collectAsState(initial = emptyList())
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -134,7 +138,7 @@ fun OrderHistoryScreen(
                     items = orders,
                     key = { it.orderId }
                 ) { order ->
-                    OrderCard(order = order)
+                    OrderCard(order = order, onClick = { onOrderClick(order.orderId) })
                 }
             }
             
@@ -154,7 +158,7 @@ fun OrderHistoryScreen(
  * @param order El objeto de datos [Order] a renderizar.
  */
 @Composable
-fun OrderCard(order: Order) {
+fun OrderCard(order: Order, onClick: () -> Unit = {}) {
     val items = remember(order.itemsJson) {
         val listType = object : com.google.gson.reflect.TypeToken<List<com.example.herbhopper_v1.data.OrderItem>>() {}.type
         try {
@@ -171,6 +175,7 @@ fun OrderCard(order: Order) {
     }
 
     Card(
+        onClick = onClick,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
@@ -245,7 +250,7 @@ fun OrderCard(order: Order) {
                         )
                     }
                 }
-                Text("$${String.format("%,.0f", order.totalAmount)} COP", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                Text(formatCop(order.totalAmount), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
             }
         }
     }

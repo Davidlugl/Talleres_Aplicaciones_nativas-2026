@@ -14,12 +14,22 @@ interface OrderDao {
     @Query("SELECT * FROM orders WHERE orderId = :orderId")
     suspend fun getOrderById(orderId: String): Order?
 
+    @Query("SELECT * FROM orders WHERE orderId = :orderId")
+    fun observeOrder(orderId: String): Flow<Order?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrder(order: Order)
 
-    @Update
-    suspend fun updateOrder(order: Order)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrders(orders: List<Order>)
 
-    @Query("UPDATE orders SET status = :status WHERE orderId = :orderId")
-    suspend fun updateOrderStatus(orderId: String, status: String)
+    @Query("DELETE FROM orders")
+    suspend fun deleteAll()
+
+    /** Reemplaza la caché local por lo que devuelve el servidor. */
+    @Transaction
+    suspend fun replaceAll(orders: List<Order>) {
+        deleteAll()
+        insertOrders(orders)
+    }
 }

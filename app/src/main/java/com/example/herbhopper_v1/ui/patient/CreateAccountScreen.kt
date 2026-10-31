@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -27,22 +26,25 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
+import com.example.herbhopper_v1.data.Validators
 
 /**
- * Pantalla para la Creación de Cuentas (Registro de nuevos pacientes).
- * Permite al usuario registrar sus datos personales como nombre completo, correo electrónico,
- * teléfono y contraseña. Incluye un modal (AlertDialog) para la selección rápida de perfiles de registro
- * (Paciente, Vendedor, Administrador), registro alternativo mediante Google y una sección de garantía
- * de pureza clínica.
+ * Pantalla para la Creación de Cuentas.
+ * El usuario elige perfil (Paciente o Vendedor; el rol ADMIN solo lo asigna otro administrador)
+ * y registra nombre, correo (Gmail, Outlook, Hotmail, Yahoo o iCloud), celular colombiano y una
+ * contraseña que cumpla la política de complejidad. Debe autorizar el tratamiento de datos (Ley 1581).
+ * Los datos viajan por HTTPS y el backend vuelve a validarlos.
  *
- * @param onSignUpSuccess Función callback ejecutada cuando el registro es exitoso.
- * @param onLoginClick Función callback para navegar a la pantalla de inicio de sesión.
+ * @param onSignUpSuccess Callback cuando se registra un Paciente.
+ * @param onLoginClick Callback para navegar a la pantalla de inicio de sesión.
+ * @param onSellerSignUpSuccess Callback cuando se registra un Vendedor.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAccountScreen(
     onSignUpSuccess: () -> Unit,
     onLoginClick: () -> Unit,
+    onSellerSignUpSuccess: () -> Unit = onSignUpSuccess,
     profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
@@ -54,6 +56,8 @@ fun CreateAccountScreen(
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var acceptedDataPolicy by remember { mutableStateOf(false) }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -268,80 +272,97 @@ fun CreateAccountScreen(
                 )
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { input -> phone = input.filter { it.isDigit() }.take(10) },
-                    label = { Text(stringResource(id = R.string.phone)) },
-                    placeholder = { Text(stringResource(id = R.string.phone_placeholder)) },
-                    prefix = { Text(stringResource(id = R.string.colombia_prefix)) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
+            OutlinedTextField(
+                value = phone,
+                onValueChange = { input -> phone = input.filter { it.isDigit() }.take(10) },
+                label = { Text(stringResource(id = R.string.phone)) },
+                placeholder = { Text(stringResource(id = R.string.phone_placeholder)) },
+                prefix = { Text(stringResource(id = R.string.colombia_prefix)) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 )
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text(stringResource(id = R.string.password)) },
-                    placeholder = { Text(stringResource(id = R.string.dummy_password)) },
-                    modifier = Modifier.weight(1f),
-                    visualTransformation = PasswordVisualTransformation(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            val missingRules = Validators.missingPasswordRules(password)
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text(stringResource(id = R.string.password)) },
+                placeholder = { Text(stringResource(id = R.string.dummy_password)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                isError = password.isNotEmpty() && missingRules.isNotEmpty(),
+                supportingText = {
+                    Text(
+                        if (password.isEmpty() || missingRules.isNotEmpty())
+                            stringResource(id = R.string.password_rules_hint, missingRules.ifEmpty { listOf("8 caracteres", "mayúscula", "minúscula", "número", "carácter especial") }.joinToString(", "))
+                        else
+                            stringResource(id = R.string.password_rules_ok)
                     )
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Autorización previa y expresa para el tratamiento de datos personales y de salud (Ley 1581 de 2012)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = acceptedDataPolicy, onCheckedChange = { acceptedDataPolicy = it })
+                Text(
+                    text = stringResource(id = R.string.data_policy_consent),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
+                enabled = !isSubmitting,
                 onClick = {
-                    val trimmedEmail = email.trim()
-                    val lowercaseEmail = trimmedEmail.lowercase()
-                    val allowedKeywords = listOf("gmail", "outlook", "hotmail", "yahoo", "icloud", "live", "herbhopper")
-                    val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
+                    val lowercaseEmail = email.trim().lowercase()
                     val cleanPhone = phone.filter { it.isDigit() }.take(10)
 
                     if (fullName.isBlank() || email.isBlank()) {
                         Toast.makeText(context, context.getString(R.string.toast_fill_name_email), Toast.LENGTH_SHORT).show()
-                    } else if (cleanPhone.length != 10) {
-                        Toast.makeText(context, context.getString(R.string.toast_invalid_phone), Toast.LENGTH_LONG).show()
-                    } else if (!trimmedEmail.matches(emailRegex) || !allowedKeywords.any { lowercaseEmail.contains(it) }) {
+                    } else if (!Validators.isValidEmail(lowercaseEmail)) {
                         Toast.makeText(context, context.getString(R.string.toast_invalid_email), Toast.LENGTH_LONG).show()
+                    } else if (!Validators.isValidColombianMobile(cleanPhone)) {
+                        Toast.makeText(context, context.getString(R.string.toast_invalid_phone), Toast.LENGTH_LONG).show()
+                    } else if (!Validators.isStrongPassword(password)) {
+                        Toast.makeText(context, context.getString(R.string.toast_weak_password), Toast.LENGTH_LONG).show()
+                    } else if (!acceptedDataPolicy) {
+                        Toast.makeText(context, context.getString(R.string.toast_accept_data_policy), Toast.LENGTH_LONG).show()
                     } else {
-                        val prefixVal = context.getString(R.string.colombia_prefix)
-                        val formattedPhone = "$prefixVal$cleanPhone"
+                        val formattedPhone = "${context.getString(R.string.colombia_prefix).trim()}$cleanPhone"
+                        isSubmitting = true
                         scope.launch {
                             val result = profileViewModel.registerToBackend(
-                                name = fullName,
+                                name = fullName.trim(),
                                 email = lowercaseEmail,
                                 password = password,
-                                role = selectedRole
+                                role = selectedRole,
+                                phone = formattedPhone
                             )
-                            if (result.isSuccess) {
-                                val profile = result.getOrNull()
-                                if (profile != null) {
-                                    val updatedProfile = profile.copy(phone = formattedPhone)
-                                    profileViewModel.saveProfile(updatedProfile)
-                                }
-                                onSignUpSuccess()
-                            } else {
-                                val error = result.exceptionOrNull()
-                                val errorMessage = error?.message ?: ""
-                                if (errorMessage.contains("400") || errorMessage.contains("registrado", ignoreCase = true)) {
-                                    Toast.makeText(context, "El correo electrónico ya está registrado", Toast.LENGTH_LONG).show()
-                                } else {
-                                    Toast.makeText(context, "Error al registrarse. Revisa tu conexión.", Toast.LENGTH_LONG).show()
-                                }
+                            isSubmitting = false
+                            result.onSuccess { profile ->
+                                if (profile.role == "SELLER") onSellerSignUpSuccess() else onSignUpSuccess()
+                            }.onFailure {
+                                Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
                             }
                         }
                     }

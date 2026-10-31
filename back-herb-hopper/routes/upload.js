@@ -2,16 +2,18 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('../cloudinary');
+const { authenticate, requireRole } = require('../middleware/auth');
 
 // Configurar multer para almacenar temporalmente en memoria para evitar archivos residuales
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // límite de 5MB
+    limits: { fileSize: 5 * 1024 * 1024 }, // límite de 5MB
+    fileFilter: (req, file, cb) => cb(null, file.mimetype.startsWith('image/'))
 });
 
-// Endpoint para subir imagen a Cloudinary en la carpeta por defecto
-router.post('/', upload.single('image'), (req, res) => {
+// Imágenes de productos: solo Vendedor y Administrador pueden subirlas
+router.post('/', authenticate, requireRole('SELLER', 'ADMIN'), upload.single('image'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No se proporcionó ningún archivo de imagen' });
     }

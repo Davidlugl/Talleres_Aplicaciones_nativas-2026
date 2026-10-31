@@ -1,12 +1,7 @@
 package com.example.herbhopper_v1.ui.patient
 
-import android.content.Context
 import android.widget.Toast
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,32 +13,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.example.herbhopper_v1.R
-import com.example.herbhopper_v1.ui.theme.*
+import com.example.herbhopper_v1.data.UserProfile
+import com.example.herbhopper_v1.data.Validators
+import com.example.herbhopper_v1.ui.components.BiometricAuth
 import kotlinx.coroutines.launch
 
 /**
- * Pantalla de Inicio de Sesión (Login Screen).
- * Permite al usuario autenticarse con email/contraseña o con huella dactilar (BiometricPrompt).
- * La primera vez que el usuario inicia sesión con email/contraseña, sus credenciales se guardan
- * de forma segura en SharedPreferences para habilitar el acceso biométrico posterior.
+ * Pantalla de Inicio de Sesión.
  *
- * @param onPatientSuccess Callback al iniciar sesión como Paciente.
- * @param onSellerSuccess  Callback al iniciar sesión como Vendedor.
- * @param onAdminSuccess   Callback al iniciar sesión como Administrador.
- * @param onForgotPasswordClick Callback para "Olvidé mi contraseña".
- * @param onSignUpClick Callback para ir al registro.
- * @param profileViewModel ViewModel del perfil del usuario.
+ * - Correo y contraseña contra el backend (JWT). No existe ningún acceso oculto ni credencial fija.
+ * - Tras el primer ingreso exitoso se pregunta al usuario si desea activar la huella. Si acepta,
+ *   el servidor entrega un token de dispositivo que se cifra con una clave AES-256 del Android
+ *   Keystore que solo se desbloquea con la huella. La contraseña nunca se guarda.
+ * - "Entrar con huella dactilar" descifra ese token tras la huella y lo cambia por una sesión nueva.
  */
-@Suppress("DEPRECATION")
 @Composable
 fun LoginScreen(
     onPatientSuccess: () -> Unit,
@@ -54,105 +44,110 @@ fun LoginScreen(
     profileViewModel: com.example.herbhopper_v1.viewmodel.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
+    val activity = context as? FragmentActivity
     val scope = rememberCoroutineScope()
     var isLoading by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // Comprueba si el dispositivo soporta biometría y si hay credenciales guardadas
-    val biometricManager = remember { BiometricManager.from(context) }
-    val isBiometricAvailable = remember {
-        biometricManager.canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+    val vault = profileViewModel.biometricVault
+    val isBiometricAvailable = remember { BiometricAuth.isAvailable(context) }
+    var biometricEnabled by remember { mutableStateOf(vault.isEnabled()) }
+    // Perfil recién autenticado que espera la decisión de activar la huella
+    var pendingProfile by remember { mutableStateOf<UserProfile?>(null) }
+
+    fun goToHome(profile: UserProfile) {
+        when (profile.role.uppercase()) {
+            "ADMIN" -> onAdminSuccess()
+            "SELLER" -> onSellerSuccess()
+            else -> onPatientSuccess()
+        }
     }
-    val prefs = remember { context.getSharedPreferences("herbhopper_prefs", Context.MODE_PRIVATE) }
-    val hasSavedCredentials = remember { prefs.getString("saved_email", null) != null }
 
-    // Muestra el botón de huella solo si el hardware lo soporta y hay credenciales guardadas
-    val showBiometricButton = isBiometricAvailable && hasSavedCredentials
+    fun showToast(message: String) = Toast.makeText(context, message, Toast.LENGTH_LONG).show()
 
-    /**
-     * Lanza el diálogo biométrico del sistema y, si el usuario se autentica correctamente,
-     * recupera las credenciales guardadas y las usa para hacer login en el backend.
-     */
-    fun launchBiometricPrompt() {
-        val activity = context as? FragmentActivity ?: return
-
-        val executor = ContextCompat.getMainExecutor(context)
-        val prompt = BiometricPrompt(
-            activity,
-            executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    // Recuperar credenciales guardadas y hacer login
-                    val savedEmail = prefs.getString("saved_email", null)
-                    val savedPassword = prefs.getString("saved_password", null)
-                    if (savedEmail != null && savedPassword != null) {
-                        isLoading = true
-                        scope.launch {
-                            if (savedEmail.lowercase() == "admin" && savedPassword == "admin123") {
-                                try {
-                                    val profile = com.example.herbhopper_v1.data.UserProfile(
-                                        uid = "user_demo_admin",
-                                        name = "Super Administrador",
-                                        email = "admin@herbhopper.com",
-                                        role = "ADMIN"
-                                    )
-                                    val db = com.example.herbhopper_v1.data.AppDatabase.getDatabase(context)
-                                    db.userDao().insertProfile(profile)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                                com.example.herbhopper_v1.data.SessionManager.login(
-                                    "user_demo_admin",
-                                    "admin@herbhopper.com",
-                                    "Super Administrador",
-                                    "ADMIN"
-                                )
-                                isLoading = false
-                                onAdminSuccess()
-                                return@launch
-                            }
-                            val loginResult = profileViewModel.loginToBackend(savedEmail, savedPassword)
-                            isLoading = false
-                            if (loginResult.isSuccess) {
-                                val profile = loginResult.getOrNull()
-                                if (profile != null) {
-                                    when (profile.role.uppercase()) {
-                                        "ADMIN"  -> onAdminSuccess()
-                                        "SELLER" -> onSellerSuccess()
-                                        else     -> onPatientSuccess()
-                                    }
-                                }
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.biometric_login_failed), Toast.LENGTH_LONG).show()
-                            }
+    fun loginWithFingerprint() {
+        if (activity == null) return
+        BiometricAuth.authenticate(
+            activity = activity,
+            title = context.getString(R.string.biometric_dialog_title),
+            subtitle = context.getString(R.string.biometric_dialog_subtitle),
+            negativeText = context.getString(R.string.biometric_dialog_negative),
+            onSuccess = {
+                val deviceToken = vault.read()
+                if (deviceToken == null) {
+                    biometricEnabled = false
+                    showToast(context.getString(R.string.biometric_login_failed))
+                    return@authenticate
+                }
+                isLoading = true
+                scope.launch {
+                    val result = profileViewModel.loginWithBiometricToken(deviceToken)
+                    isLoading = false
+                    result.onSuccess { goToHome(it) }
+                        .onFailure {
+                            biometricEnabled = vault.isEnabled()
+                            showToast(it.message ?: context.getString(R.string.biometric_login_failed))
                         }
-                    }
                 }
+            },
+            onError = { message -> message?.let { showToast(it) } }
+        )
+    }
 
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    if (errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON &&
-                        errorCode != BiometricPrompt.ERROR_USER_CANCELED
-                    ) {
-                        Toast.makeText(context, "Error: $errString", Toast.LENGTH_SHORT).show()
+    /** Pide un token de dispositivo, confirma con la huella y lo guarda cifrado. */
+    fun enableFingerprint(profile: UserProfile) {
+        if (activity == null) {
+            goToHome(profile); return
+        }
+        isLoading = true
+        scope.launch {
+            val tokenResult = profileViewModel.requestDeviceToken()
+            isLoading = false
+            val deviceToken = tokenResult.getOrNull()
+            if (deviceToken == null) {
+                showToast(tokenResult.exceptionOrNull()?.message ?: context.getString(R.string.network_server_error))
+                goToHome(profile)
+                return@launch
+            }
+            BiometricAuth.authenticate(
+                activity = activity,
+                title = context.getString(R.string.biometric_enable_title),
+                subtitle = context.getString(R.string.biometric_dialog_subtitle),
+                negativeText = context.getString(R.string.biometric_dialog_negative),
+                onSuccess = {
+                    try {
+                        vault.store(profile.email, deviceToken)
+                        showToast(context.getString(R.string.biometric_enabled_toast))
+                    } catch (e: Exception) {
+                        vault.disable()
+                        showToast(context.getString(R.string.biometric_login_failed))
                     }
-                }
+                    goToHome(profile)
+                },
+                onError = { goToHome(profile) }
+            )
+        }
+    }
 
-                override fun onAuthenticationFailed() {
-                    Toast.makeText(context, context.getString(R.string.biometric_not_recognized), Toast.LENGTH_SHORT).show()
+    pendingProfile?.let { profile ->
+        AlertDialog(
+            onDismissRequest = { pendingProfile = null; goToHome(profile) },
+            icon = { Icon(Icons.Default.Fingerprint, contentDescription = null) },
+            title = { Text(stringResource(id = R.string.biometric_enable_title)) },
+            text = { Text(stringResource(id = R.string.biometric_enable_message)) },
+            confirmButton = {
+                Button(onClick = { pendingProfile = null; enableFingerprint(profile) }) {
+                    Text(stringResource(id = R.string.biometric_enable_accept))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingProfile = null; goToHome(profile) }) {
+                    Text(stringResource(id = R.string.biometric_enable_decline))
                 }
             }
         )
-
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(context.getString(R.string.biometric_dialog_title))
-            .setSubtitle(context.getString(R.string.biometric_dialog_subtitle))
-            .setNegativeButtonText(context.getString(R.string.biometric_dialog_negative))
-            .setAllowedAuthenticators(BIOMETRIC_STRONG)
-            .build()
-
-        prompt.authenticate(promptInfo)
     }
 
     Surface(
@@ -246,8 +241,7 @@ fun LoginScreen(
                             else
                                 androidx.compose.ui.text.input.PasswordVisualTransformation(),
                             trailingIcon = {
-                                val image = if (passwordVisible)
-                                    Icons.Default.Visibility else Icons.Default.VisibilityOff
+                                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     Icon(image, null)
                                 }
@@ -259,116 +253,32 @@ fun LoginScreen(
                         // Botón principal de inicio de sesión
                         Button(
                             onClick = {
-                                val trimmedEmail = email.trim()
-                                val passwordInput = password
-                                
-                                if (trimmedEmail.lowercase() == "admin" && passwordInput == "admin123") {
-                                    isLoading = true
-                                    scope.launch {
-                                        try {
-                                            val profile = com.example.herbhopper_v1.data.UserProfile(
-                                                uid = "user_demo_admin",
-                                                name = "Super Administrador",
-                                                email = "admin@herbhopper.com",
-                                                role = "ADMIN"
-                                            )
-                                            val db = com.example.herbhopper_v1.data.AppDatabase.getDatabase(context)
-                                            db.userDao().insertProfile(profile)
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                        }
-                                        
-                                        prefs.edit()
-                                            .putString("saved_email", "admin")
-                                            .putString("saved_password", "admin123")
-                                            .apply()
-                                            
-                                        com.example.herbhopper_v1.data.SessionManager.login(
-                                            "user_demo_admin",
-                                            "admin@herbhopper.com",
-                                            "Super Administrador",
-                                            "ADMIN"
-                                        )
-                                        isLoading = false
-                                        onAdminSuccess()
-                                    }
-                                    return@Button
-                                }
-                                
-                                val lowercaseEmail = trimmedEmail.lowercase()
-                                val allowedKeywords = listOf(
-                                    "gmail", "outlook", "hotmail", "yahoo",
-                                    "icloud", "live", "herbhopper"
-                                )
-                                val emailRegex =
-                                    "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
-
+                                val trimmedEmail = email.trim().lowercase()
                                 when {
-                                    email.isBlank() || password.isBlank() -> {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.toast_fill_login),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                    !trimmedEmail.matches(emailRegex) ||
-                                            !allowedKeywords.any { lowercaseEmail.contains(it) } -> {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.toast_invalid_email),
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                    }
+                                    trimmedEmail.isBlank() || password.isBlank() ->
+                                        showToast(context.getString(R.string.toast_fill_login))
+                                    !Validators.isValidEmail(trimmedEmail) ->
+                                        showToast(context.getString(R.string.toast_invalid_email))
                                     else -> {
                                         isLoading = true
                                         scope.launch {
                                             val result = profileViewModel.loginToBackend(trimmedEmail, password)
                                             isLoading = false
-                                            if (result.isSuccess) {
-                                                val profile = result.getOrNull()
-                                                if (profile != null) {
-                                                    // Guardar credenciales para futuros logins con huella
-                                                    prefs.edit()
-                                                        .putString("saved_email", trimmedEmail)
-                                                        .putString("saved_password", password)
-                                                        .apply()
-
-                                                    when (profile.role.uppercase()) {
-                                                        "ADMIN"  -> onAdminSuccess()
-                                                        "SELLER" -> onSellerSuccess()
-                                                        else     -> onPatientSuccess()
-                                                    }
+                                            result.onSuccess { profile ->
+                                                password = ""
+                                                if (isBiometricAvailable && !vault.isEnabled()) {
+                                                    pendingProfile = profile
                                                 } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        context.getString(R.string.toast_wrong_credentials),
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
+                                                    goToHome(profile)
                                                 }
-                                            } else {
-                                                val error = result.exceptionOrNull()
-                                                val errorMessage = error?.message ?: ""
-                                                if (errorMessage.contains("401") ||
-                                                    errorMessage.contains("incorrectas", ignoreCase = true) ||
-                                                    errorMessage.contains("encontrado", ignoreCase = true)
-                                                ) {
-                                                    Toast.makeText(
-                                                        context,
-                                                        context.getString(R.string.toast_wrong_credentials),
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        context.getString(R.string.network_server_error),
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                }
+                                            }.onFailure {
+                                                showToast(it.message ?: context.getString(R.string.toast_wrong_credentials))
                                             }
                                         }
                                     }
                                 }
                             },
+                            enabled = !isLoading,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
@@ -381,7 +291,7 @@ fun LoginScreen(
                         }
 
                         // ─── Botón de huella dactilar ───────────────────────────────────────
-                        if (showBiometricButton) {
+                        if (isBiometricAvailable && biometricEnabled) {
                             Spacer(modifier = Modifier.height(20.dp))
 
                             HorizontalDivider(
@@ -393,7 +303,8 @@ fun LoginScreen(
                             Spacer(modifier = Modifier.height(20.dp))
 
                             OutlinedButton(
-                                onClick = { launchBiometricPrompt() },
+                                onClick = { loginWithFingerprint() },
+                                enabled = !isLoading,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp),
@@ -405,7 +316,7 @@ fun LoginScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Fingerprint,
-                                    contentDescription = "Iniciar sesión con huella",
+                                    contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -416,13 +327,19 @@ fun LoginScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
+                            vault.enabledEmail()?.let { savedEmail ->
+                                Text(
+                                    text = savedEmail,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 6.dp)
+                                )
+                            }
                         }
-                        // ────────────────────────────────────────────────────────────────────
                     }
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
-                Spacer(modifier = Modifier.height(24.dp))
                 Spacer(modifier = Modifier.weight(1f))
 
                 TextButton(onClick = onForgotPasswordClick) {

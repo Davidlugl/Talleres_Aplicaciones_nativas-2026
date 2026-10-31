@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -44,7 +45,10 @@ fun IncomingOrdersScreen(
     onNavigate: (String) -> Unit = {},
     viewModel: OrderViewModel = viewModel()
 ) {
-    val orders by viewModel.allOrders.collectAsState(initial = emptyList())
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val orders by viewModel.orders.collectAsState(initial = emptyList())
+    // Pedidos de todos los pacientes, leídos del servidor
+    androidx.compose.runtime.LaunchedEffect(Unit) { viewModel.refresh() }
 
     Scaffold(
         topBar = {
@@ -53,6 +57,11 @@ fun IncomingOrdersScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(id = R.string.back))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.refresh() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(id = R.string.refresh))
                     }
                 }
             )
@@ -92,13 +101,13 @@ fun IncomingOrdersScreen(
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "No hay pedidos pendientes",
+                        stringResource(id = R.string.no_incoming_orders),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Cuando un cliente realice una compra en la tienda, aparecerá aquí en tiempo real.",
+                        stringResource(id = R.string.no_incoming_orders_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -117,7 +126,11 @@ fun IncomingOrdersScreen(
                 items(orders) { order ->
                     OrderCard(
                         order = order,
-                        onAccept = { viewModel.updateOrderStatus(order.orderId, "ACCEPTED") },
+                        onAccept = {
+                            viewModel.updateOrderStatus(order.orderId, "ACCEPTED") { error ->
+                                android.widget.Toast.makeText(context, error ?: context.getString(R.string.order_accepted_toast), android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        },
                         onDetails = { onNavigate("order_details/${order.orderId}") }
                     )
                 }
@@ -160,7 +173,13 @@ fun OrderCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(stringResource(id = R.string.order_client, order.userName), style = MaterialTheme.typography.bodyMedium)
-            Text(stringResource(id = R.string.order_total, "$${String.format("%,.0f", order.totalAmount)} COP"), fontWeight = FontWeight.Bold)
+            Text(stringResource(id = R.string.order_total, com.example.herbhopper_v1.ui.patient.formatCop(order.totalAmount)), fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(id = R.string.payment_status_label) + ": " + com.example.herbhopper_v1.ui.patient.paymentStatusLabel(order.paymentStatus) +
+                    if (order.prescriptionId != null) " · " + stringResource(id = R.string.prescription_label) + ": " + com.example.herbhopper_v1.ui.patient.prescriptionStatusLabel(order.prescriptionStatus) else "",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             val date = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()).format(Date(order.timestamp))
             Text(stringResource(id = R.string.order_date, date), style = MaterialTheme.typography.labelSmall)

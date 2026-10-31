@@ -21,22 +21,60 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.herbhopper_v1.R
 import com.example.herbhopper_v1.model.ChatMessage
+import kotlinx.coroutines.launch
 
 /**
- * Pantalla de chat de soporte al cliente para el paciente.
- * Permite al paciente enviar y recibir mensajes simulados con un asistente virtual de HerbHopper.
- * Muestra el historial de la conversación en tiempo real y ofrece un campo de texto para redactar y enviar mensajes.
+ * Chat de soporte técnico.
+ * Los mensajes se guardan en el backend (/api/support) y el equipo de soporte los responde
+ * desde su bandeja; las respuestas aparecen aquí. La conversación se actualiza cada 10 segundos
+ * mientras la pantalla está abierta.
  *
  * @param onBack Función de retorno (callback) que se ejecuta al presionar el botón de regresar para volver a la pantalla anterior.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(onBack: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val scope = rememberCoroutineScope()
+    val api = remember { com.example.herbhopper_v1.data.network.ApiService.instance }
+    val timeFormat = remember { java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale("es", "CO")) }
+    val welcome = ChatMessage("welcome", stringResource(id = R.string.chat_welcome), false, "")
     var messageText by remember { mutableStateOf("") }
-    var messages by remember { 
-        mutableStateOf(listOf(
-            ChatMessage("1", "¡Hola! Soy el asistente virtual de HerbHopper. ¿En qué te puedo ayudar hoy?", false, "10:00 AM")
-        ))
+    var isSending by remember { mutableStateOf(false) }
+    var messages by remember { mutableStateOf(listOf<ChatMessage>()) }
+
+    suspend fun loadMessages() {
+        try {
+            messages = api.getSupportMessages().map {
+                ChatMessage(it.id.toString(), it.text, !it.fromSupport, timeFormat.format(java.util.Date(it.timestamp)))
+            }
+        } catch (e: Exception) {
+            // Sin conexión: se mantiene lo que ya se mostraba
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            loadMessages()
+            kotlinx.coroutines.delay(10_000)
+        }
+    }
+
+    fun send() {
+        val text = messageText.trim()
+        if (text.isEmpty() || isSending) return
+        isSending = true
+        scope.launch {
+            try {
+                api.sendSupportMessage(com.example.herbhopper_v1.data.network.SupportMessageRequest(text))
+                messageText = ""
+                loadMessages()
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, context.getString(R.string.network_server_error), android.widget.Toast.LENGTH_LONG).show()
+            } finally {
+                isSending = false
+            }
+        }
     }
 
     Scaffold(
@@ -47,8 +85,8 @@ fun ChatScreen(onBack: () -> Unit) {
                         Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Soporte HerbHopper", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Text("En línea", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text(stringResource(id = R.string.chat_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(stringResource(id = R.string.chat_subtitle), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -80,12 +118,8 @@ fun ChatScreen(onBack: () -> Unit) {
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     IconButton(
-                        onClick = {
-                            if (messageText.isNotBlank()) {
-                                messages = messages + ChatMessage(System.currentTimeMillis().toString(), messageText, true, "Ahora")
-                                messageText = ""
-                            }
-                        },
+                        onClick = { send() },
+                        enabled = !isSending,
                         modifier = Modifier.size(48.dp).background(MaterialTheme.colorScheme.primary, CircleShape)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(20.dp))
@@ -99,7 +133,7 @@ fun ChatScreen(onBack: () -> Unit) {
             reverseLayout = false
         ) {
             item { Spacer(modifier = Modifier.height(16.dp)) }
-            items(messages) { msg ->
+            items(listOf(welcome) + messages) { msg ->
                 ChatBubble(msg)
                 Spacer(modifier = Modifier.height(8.dp))
             }

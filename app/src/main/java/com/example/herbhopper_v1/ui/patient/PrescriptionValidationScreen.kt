@@ -44,19 +44,39 @@ import androidx.camera.view.PreviewView
 import com.example.herbhopper_v1.R
 
 /**
- * Pantalla de Validación de Recetas Médicas (Prescription Validation).
- * Permite al paciente digitalizar su receta médica mediante la cámara nativa del dispositivo
- * o seleccionarla desde la galería de imágenes para su correspondiente validación clínica.
- * Solicita permisos de cámara en tiempo de ejecución de manera segura y simula un visor de escáner.
+ * Pantalla "Cargar Fórmula" (validación de recetas médicas).
+ * El paciente captura la fórmula con la cámara (CameraX, con flash) o elige una imagen o un PDF.
+ * Antes de enviarla indica el nombre y el registro médico del profesional; el archivo se sube al
+ * backend (almacenamiento privado) y queda PENDIENTE hasta que un farmacéutico verifique registro,
+ * sello y firma (plazo máximo 24 h). El ícono de la barra superior muestra "Mis fórmulas" con su estado.
  *
  * @param onBack Función callback para cerrar la pantalla o regresar a la sección anterior.
  * @param onHelpClick Función callback para abrir una sección de ayuda.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {}) {
+fun PrescriptionValidationScreen(
+    onBack: () -> Unit,
+    onHelpClick: () -> Unit = {},
+    prescriptionViewModel: com.example.herbhopper_v1.viewmodel.PrescriptionViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     val context = LocalContext.current
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    // Archivo listo para enviar: foto capturada (JPEG en caché), imagen o PDF elegido
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedMime by remember { mutableStateOf("image/jpeg") }
+    var doctorName by remember { mutableStateOf("") }
+    var doctorRegistry by remember { mutableStateOf("") }
+    var showMyPrescriptions by remember { mutableStateOf(false) }
+    val isUploading by prescriptionViewModel.isUploading.collectAsState()
+    val myPrescriptions by prescriptionViewModel.prescriptions.collectAsState()
+
+    LaunchedEffect(Unit) { prescriptionViewModel.refresh() }
+
+    fun clearSelection() {
+        capturedBitmap = null
+        selectedUri = null
+    }
     var flashMode by remember { mutableStateOf("off") } // "off", "on", "auto"
     var cameraInstance by remember { mutableStateOf<androidx.camera.core.Camera?>(null) }
     val imageCapture = remember { ImageCapture.Builder().build() }
@@ -76,11 +96,18 @@ fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {
         }
     }
 
+    // Galería / archivos: imagen de alta resolución o PDF
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            Toast.makeText(context, "Imagen seleccionada", Toast.LENGTH_SHORT).show()
+            selectedMime = context.contentResolver.getType(uri) ?: "image/jpeg"
+            selectedUri = uri
+            capturedBitmap = if (selectedMime.startsWith("image/")) {
+                try {
+                    context.contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it) }
+                } catch (e: Exception) { null }
+            } else null
         }
     }
 
@@ -108,6 +135,9 @@ fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {
                     IconButton(onClick = onBack) { Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 actions = {
+                    IconButton(onClick = { prescriptionViewModel.refresh(); showMyPrescriptions = true }) {
+                        Icon(Icons.Default.ListAlt, contentDescription = stringResource(id = R.string.my_prescriptions_title), tint = MaterialTheme.colorScheme.primary)
+                    }
                     IconButton(onClick = onHelpClick) { Icon(Icons.AutoMirrored.Filled.HelpOutline, null, tint = MaterialTheme.colorScheme.primary) }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
@@ -209,7 +239,7 @@ fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {
                         ControlButton(
                             icon = Icons.Default.PhotoLibrary, 
                             label = stringResource(id = R.string.gallery),
-                            onClick = { galleryLauncher.launch("image/*") }
+                            onClick = { galleryLauncher.launch(arrayOf("image/*", "application/pdf")) }
                         )
                         
                         // Shutter Button
@@ -234,8 +264,13 @@ fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {
                                                 override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
                                                     try {
                                                         val bitmap = image.toBitmap()
-                                                        capturedBitmap = bitmap
                                                         image.close()
+                                                        // Se guarda como JPEG en la caché privada para enviarlo
+                                                        val file = java.io.File(context.cacheDir, "formula_${System.currentTimeMillis()}.jpg")
+                                                        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+                                                        capturedBitmap = bitmap
+                                                        selectedMime = "image/jpeg"
+                                                        selectedUri = Uri.fromFile(file)
                                                     } catch (e: Exception) {
                                                         e.printStackTrace()
                                                         Toast.makeText(context, "Error al procesar la imagen", Toast.LENGTH_SHORT).show()
@@ -297,7 +332,8 @@ fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {
                 }
             }
 
-            capturedBitmap?.let { bitmap ->
+            // ---- Revisión y envío de la fórmula ----
+            selectedUri?.let { uri ->
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -310,52 +346,138 @@ fun PrescriptionValidationScreen(onBack: () -> Unit, onHelpClick: () -> Unit = {
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Text(
-                            "Verifique su receta",
+                            stringResource(id = R.string.prescription_review_title),
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
-                            modifier = Modifier.padding(vertical = 16.dp)
+                            modifier = Modifier.padding(vertical = 12.dp)
                         )
-                        
-                        androidx.compose.foundation.Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Receta capturada",
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .border(2.dp, Color.White, RoundedCornerShape(16.dp))
+
+                        val bitmap = capturedBitmap
+                        if (bitmap != null) {
+                            androidx.compose.foundation.Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = stringResource(id = R.string.prescription_label),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .border(2.dp, Color.White, RoundedCornerShape(16.dp))
+                            )
+                        } else {
+                            Column(
+                                modifier = Modifier.weight(1f).fillMaxWidth(),
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, null, tint = Color.White, modifier = Modifier.size(72.dp))
+                                Text(uri.lastPathSegment ?: "PDF", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            stringResource(id = R.string.prescription_checklist),
+                            color = Color.White.copy(alpha = 0.85f),
+                            style = MaterialTheme.typography.bodySmall
                         )
-                        
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        val fieldColors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedLabelColor = Color.White,
+                            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.5f)
+                        )
+                        OutlinedTextField(
+                            value = doctorName,
+                            onValueChange = { doctorName = it },
+                            label = { Text(stringResource(id = R.string.doctor_name_label)) },
+                            singleLine = true,
+                            colors = fieldColors,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = doctorRegistry,
+                            onValueChange = { doctorRegistry = it },
+                            label = { Text(stringResource(id = R.string.doctor_registry_label)) },
+                            singleLine = true,
+                            colors = fieldColors,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Button(
-                                onClick = { capturedBitmap = null }, // retry
+                                onClick = { clearSelection() },
+                                enabled = !isUploading,
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
                                 Icon(Icons.Default.Refresh, null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Reintentar")
+                                Text(stringResource(id = R.string.retry_btn))
                             }
-                            
+
                             Button(
-                                onClick = { 
-                                    Toast.makeText(context, "Foto capturada con éxito", Toast.LENGTH_SHORT).show()
-                                    onBack()
+                                onClick = {
+                                    if (doctorName.isBlank() || doctorRegistry.isBlank()) {
+                                        Toast.makeText(context, context.getString(R.string.toast_doctor_data_required), Toast.LENGTH_LONG).show()
+                                        return@Button
+                                    }
+                                    prescriptionViewModel.upload(uri, selectedMime, doctorName, doctorRegistry) { error ->
+                                        if (error == null) {
+                                            Toast.makeText(context, context.getString(R.string.toast_prescription_sent), Toast.LENGTH_LONG).show()
+                                            clearSelection()
+                                            onBack()
+                                        } else {
+                                            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                        }
+                                    }
                                 },
+                                enabled = !isUploading,
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                             ) {
-                                Icon(Icons.Default.Check, null)
+                                if (isUploading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                                } else {
+                                    Icon(Icons.Default.CloudUpload, null)
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Aceptar")
+                                Text(stringResource(id = R.string.send_for_validation_btn))
                             }
                         }
                     }
                 }
+            }
+
+            // ---- Mis fórmulas y su estado ----
+            if (showMyPrescriptions) {
+                AlertDialog(
+                    onDismissRequest = { showMyPrescriptions = false },
+                    title = { Text(stringResource(id = R.string.my_prescriptions_title)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (myPrescriptions.isEmpty()) {
+                                Text(stringResource(id = R.string.no_prescriptions))
+                            }
+                            myPrescriptions.forEach { p ->
+                                Column {
+                                    Text(stringResource(id = R.string.prescription_item_title, p.id, p.doctorName), fontWeight = FontWeight.Bold)
+                                    Text(prescriptionStatusLabel(p.status), style = MaterialTheme.typography.bodySmall)
+                                    p.reviewNote?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showMyPrescriptions = false }) { Text(stringResource(id = R.string.close_btn)) }
+                    }
+                )
             }
         }
     }

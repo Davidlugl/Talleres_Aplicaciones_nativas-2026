@@ -1,14 +1,20 @@
 package com.example.herbhopper_v1.viewmodel
 
 import android.app.Application
-import com.example.herbhopper_v1.R
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.herbhopper_v1.data.BuyerInfo
-import com.example.herbhopper_v1.data.PaymentRepository
-import com.example.herbhopper_v1.data.PaymentResult
+import com.example.herbhopper_v1.R
+import com.example.herbhopper_v1.data.AppDatabase
+import com.example.herbhopper_v1.data.DeliveryAddress
+import com.example.herbhopper_v1.data.Order
 import com.example.herbhopper_v1.data.SessionManager
+import com.example.herbhopper_v1.data.network.ApiService
+import com.example.herbhopper_v1.data.network.CreateOrderRequest
 import com.example.herbhopper_v1.data.network.EpaycoTransactionData
+import com.example.herbhopper_v1.data.network.OrderItemRequest
+import com.example.herbhopper_v1.data.network.PrescriptionResponse
+import com.example.herbhopper_v1.data.network.apiErrorMessage
+import com.example.herbhopper_v1.model.CartItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,302 +22,136 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 // ---------------------------------------------------------------------------
-// Métodos de pago disponibles
+// Métodos de pago disponibles (todos se pagan dentro del checkout oficial de ePayco)
 // ---------------------------------------------------------------------------
 
-/**
- * Representa los métodos de pago disponibles en el sistema.
- */
 sealed class PaymentMethod(val key: String) {
-    object CreditCard    : PaymentMethod("CREDIT_CARD")
-    object BankTransfer  : PaymentMethod("BANK")
-    object Cash          : PaymentMethod("CASH")
-
-    companion object {
-        fun fromKey(key: String): PaymentMethod = when (key) {
-            "CREDIT_CARD" -> CreditCard
-            "BANK"        -> BankTransfer
-            "CASH"        -> Cash
-            else          -> CreditCard
-        }
-    }
+    object CreditCard : PaymentMethod("CREDIT_CARD")
+    object BankTransfer : PaymentMethod("PSE")
+    object Cash : PaymentMethod("CASH")
 }
 
 // ---------------------------------------------------------------------------
 // Estado de la transacción ePayco
 // ---------------------------------------------------------------------------
 
-/** Estado del proceso de pago con ePayco. */
 sealed class TransactionStatus {
-    /** Sin transacción iniciada aún. */
     object Idle : TransactionStatus()
-
-    /** Transacción en proceso. */
     object Loading : TransactionStatus()
-
-    /** Pago aceptado por el banco. */
     data class Accepted(val data: EpaycoTransactionData) : TransactionStatus()
-
-    /** Pago rechazado. */
     data class Rejected(val reason: String, val data: EpaycoTransactionData?) : TransactionStatus()
-
-    /** Pago pendiente de confirmación (PSE, etc). */
+    /** PSE en proceso o cupón de efectivo generado y aún sin pagar. */
     data class Pending(val refPayco: String?, val data: EpaycoTransactionData?) : TransactionStatus()
-
-    /** Error técnico. */
     data class Failed(val message: String) : TransactionStatus()
 }
 
-// ---------------------------------------------------------------------------
-// UI State del Checkout
-// ---------------------------------------------------------------------------
-
-/**
- * Estado inmutable de la interfaz de usuario para el proceso de Checkout.
- */
 data class CheckoutUiState(
-    // Datos del formulario de tarjeta
-    val cardNumber: String = "",
-    val expiryDate: String = "",
-    val cvv: String = "",
-    val cardHolderName: String = "",
-
-    // Datos del comprador (se prellenan desde el perfil/sesión)
-    val buyerName: String = "",
-    val buyerLastName: String = "",
-    val buyerEmail: String = "",
-    val buyerPhone: String = "",
-    val buyerDoc: String = "",
-    val buyerAddress: String = "",
-
-    // Selección de método de pago
     val selectedMethod: PaymentMethod = PaymentMethod.CreditCard,
-
-    // Estado de la transacción
-    val transactionStatus: TransactionStatus = TransactionStatus.Idle,
-
-    // Mensajes de validación
-    val errorMessage: String? = null,
-
-    // Aliases convenientes
-    val isLoading: Boolean = transactionStatus is TransactionStatus.Loading,
-    val isPaymentSuccess: Boolean = transactionStatus is TransactionStatus.Accepted
+    val addresses: List<DeliveryAddress> = emptyList(),
+    val selectedAddress: DeliveryAddress? = null,
+    val prescriptions: List<PrescriptionResponse> = emptyList(),
+    val selectedPrescriptionId: Int? = null,
+    val isCreatingOrder: Boolean = false,
+    val errorMessage: String? = null
 )
 
-// ---------------------------------------------------------------------------
-// ViewModel
-// ---------------------------------------------------------------------------
-
 /**
- * ViewModel encargado de la lógica de negocio del Checkout con integración real a ePayco.
- *
- * Flujo para tarjeta:
- * 1. El usuario llena el formulario.
- * 2. [executePayment] valida los datos localmente.
- * 3. Se llama a [PaymentRepository.processCardPayment] que tokeniza, crea cliente y cobra.
- * 4. El resultado se mapea a [TransactionStatus] y se expone al UI.
+ * Checkout: arma el pedido (dirección con coordenadas GPS, fórmula médica si aplica y método
+ * de pago), lo registra en el backend —que recalcula precios, reserva stock y valida la fórmula—
+ * y entrega el pedido creado para abrir el checkout de ePayco.
  */
 class CheckoutViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = PaymentRepository()
+    private val addressDao = AppDatabase.getDatabase(application).deliveryAddressDao()
+    private val api = ApiService.instance
 
     private val _uiState = MutableStateFlow(CheckoutUiState())
     val uiState: StateFlow<CheckoutUiState> = _uiState.asStateFlow()
 
     init {
-        SessionManager.init(application)
-        
-        // Pre-llenar datos del comprador desde la sesión activa
-        if (SessionManager.isLoggedIn()) {
-            val fullName = SessionManager.getName()
-            val nameParts = fullName.trim().split(" ")
-            val email = SessionManager.getEmail()
-            val phone = SessionManager.getPhone() ?: ""
-            
-            _uiState.update {
-                it.copy(
-                    buyerName     = nameParts.firstOrNull() ?: fullName,
-                    buyerLastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else "",
-                    buyerEmail    = email,
-                    buyerPhone    = phone
-                )
+        val uid = SessionManager.getUid()
+        viewModelScope.launch {
+            addressDao.observeAddresses(uid).collect { addresses ->
+                _uiState.update { state ->
+                    val keep = state.selectedAddress?.let { sel -> addresses.firstOrNull { it.id == sel.id } }
+                    state.copy(
+                        addresses = addresses,
+                        selectedAddress = keep ?: addresses.firstOrNull { it.isDefault } ?: addresses.firstOrNull()
+                    )
+                }
+            }
+        }
+        refreshPrescriptions()
+    }
+
+    fun refreshPrescriptions() {
+        viewModelScope.launch {
+            try {
+                // Solo sirven fórmulas pendientes de revisión o aprobadas
+                val usable = api.getPrescriptions().filter { it.status != "REJECTED" }
+                _uiState.update { state ->
+                    state.copy(
+                        prescriptions = usable,
+                        selectedPrescriptionId = state.selectedPrescriptionId?.takeIf { id -> usable.any { it.id == id } }
+                            ?: usable.firstOrNull { it.status == "APPROVED" }?.id
+                            ?: usable.firstOrNull()?.id
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Actualizadores del formulario de tarjeta
-    // -----------------------------------------------------------------------
+    fun onPaymentMethodChange(method: PaymentMethod) = _uiState.update { it.copy(selectedMethod = method, errorMessage = null) }
 
-    fun onCardNumberChange(number: String) {
-        val clean = number.filter { it.isDigit() }.take(16)
-        _uiState.update { it.copy(cardNumber = clean, errorMessage = null) }
-    }
+    fun onAddressSelected(address: DeliveryAddress) = _uiState.update { it.copy(selectedAddress = address, errorMessage = null) }
 
-    fun onExpiryDateChange(expiry: String) {
-        val clean = expiry.filter { it.isDigit() }.take(4)
-        _uiState.update { it.copy(expiryDate = clean, errorMessage = null) }
-    }
+    fun onPrescriptionSelected(id: Int?) = _uiState.update { it.copy(selectedPrescriptionId = id, errorMessage = null) }
 
-    fun onCvvChange(cvvValue: String) {
-        val clean = cvvValue.filter { it.isDigit() }.take(3)
-        _uiState.update { it.copy(cvv = clean, errorMessage = null) }
-    }
-
-    fun onCardHolderNameChange(name: String) {
-        _uiState.update { it.copy(cardHolderName = name, errorMessage = null) }
-    }
-
-    fun onPaymentMethodChange(method: PaymentMethod) {
-        _uiState.update { it.copy(selectedMethod = method, errorMessage = null) }
-    }
-
-    // Datos del comprador (para usuarios que editan su información en el checkout)
-    fun onBuyerPhoneChange(phone: String) {
-        _uiState.update { it.copy(buyerPhone = phone, errorMessage = null) }
-    }
-
-    fun onBuyerDocChange(doc: String) {
-        _uiState.update { it.copy(buyerDoc = doc, errorMessage = null) }
-    }
-
-    fun onBuyerAddressChange(address: String) {
-        _uiState.update { it.copy(buyerAddress = address, errorMessage = null) }
-    }
-
-    // -----------------------------------------------------------------------
-    // Ejecutar pago
-    // -----------------------------------------------------------------------
+    fun clearError() = _uiState.update { it.copy(errorMessage = null) }
 
     /**
-     * Inicia el proceso de pago.
-     *
-     * Para tarjeta: valida el formulario y delega a [PaymentRepository.processCardPayment].
-     * Para PSE / Efectivo: registra la orden como PENDING y notifica el éxito.
-     *
-     * @param totalAmount  Monto total del pedido en COP.
-     * @param orderId      Referencia única del pedido.
-     * @param description  Descripción breve del contenido del pedido.
-     * @param onSuccess    Callback invocado cuando el pago se procesa (Aceptado, Pendiente o Efectivo).
+     * Registra el pedido en el servidor. Si todo está bien, [onCreated] recibe el pedido
+     * (con el total recalculado por el servidor) para abrir el checkout de ePayco.
      */
-    fun executePayment(
-        totalAmount: Double,
-        orderId: String,
-        description: String,
-        onSuccess: (TransactionStatus) -> Unit
-    ) {
+    fun createOrder(cartItems: List<CartItem>, orderId: String, onCreated: (Order, PaymentMethod) -> Unit) {
         val state = _uiState.value
-
-        // Validación de negocio para tarjeta de crédito/débito
-        if (state.selectedMethod == PaymentMethod.CreditCard) {
-            val validationError = validateCardForm(state)
-            if (validationError != null) {
-                _uiState.update { it.copy(errorMessage = validationError) }
-                return
-            }
-        }
-
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    transactionStatus = TransactionStatus.Loading,
-                    errorMessage      = null
-                )
-            }
-
-            val newStatus: TransactionStatus = when (state.selectedMethod) {
-                is PaymentMethod.CreditCard -> {
-                    val buyer = BuyerInfo(
-                        name      = state.buyerName,
-                        lastName  = state.buyerLastName,
-                        email     = state.buyerEmail,
-                        phone     = state.buyerPhone,
-                        docNumber = state.buyerDoc,
-                        address   = state.buyerAddress
-                    )
-
-                    val result = repository.processCardPayment(
-                        cardNumber  = state.cardNumber,
-                        expiry      = state.expiryDate,
-                        cvv         = state.cvv,
-                        amount      = totalAmount,
-                        orderId     = orderId,
-                        description = description,
-                        buyer       = buyer
-                    )
-
-                    mapPaymentResult(result)
-                }
-
-                // PSE – Simulado como PENDING hasta integrar el flujo de redirección web
-                is PaymentMethod.BankTransfer -> {
-                    TransactionStatus.Pending(
-                        refPayco = null,
-                        data     = null
-                    )
-                }
-
-                // Efectivo – Siempre registra como PENDING (el vendedor confirma al recibir)
-                is PaymentMethod.Cash -> {
-                    TransactionStatus.Pending(
-                        refPayco = null,
-                        data     = null
-                    )
-                }
-            }
-
-            _uiState.update { it.copy(transactionStatus = newStatus) }
-
-            // Disparar callback para navegación/creación de orden si fue exitoso o pendiente
-            if (newStatus is TransactionStatus.Accepted || newStatus is TransactionStatus.Pending) {
-                onSuccess(newStatus)
-            }
-        }
-    }
-
-    /**
-     * Consulta el estado de una transacción pendiente.
-     * Útil para polling tras la respuesta de PSE.
-     */
-    fun refreshTransactionStatus(refPayco: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(transactionStatus = TransactionStatus.Loading) }
-            val result = repository.confirmTransaction(refPayco)
-            _uiState.update { it.copy(transactionStatus = mapPaymentResult(result)) }
-        }
-    }
-
-    /** Reinicia el estado para permitir un nuevo intento de pago. */
-    fun resetPaymentState() {
-        _uiState.update {
-            it.copy(
-                transactionStatus = TransactionStatus.Idle,
-                errorMessage      = null
-            )
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // Utilidades privadas
-    // -----------------------------------------------------------------------
-
-    private fun validateCardForm(state: CheckoutUiState): String? {
         val app = getApplication<Application>()
-        if (state.cardNumber.length != 16) return app.getString(R.string.toast_invalid_card)
-        if (state.expiryDate.length != 4) return app.getString(R.string.toast_invalid_expiry)
-        if (state.cvv.length != 3)        return app.getString(R.string.toast_invalid_cvv)
-        if (state.buyerName.isBlank() || state.buyerLastName.isBlank() ||
-            state.buyerEmail.isBlank() || state.buyerPhone.isBlank() ||
-            state.buyerDoc.isBlank() || state.buyerAddress.isBlank()) {
-            return app.getString(R.string.toast_fill_credentials)
-        }
-        return null
-    }
+        val address = state.selectedAddress
+        val needsPrescription = cartItems.any { it.product.requiresPrescription }
 
-    private fun mapPaymentResult(result: PaymentResult): TransactionStatus = when (result) {
-        is PaymentResult.Success  -> TransactionStatus.Accepted(result.transaction)
-        is PaymentResult.Rejected -> TransactionStatus.Rejected(result.reason, result.transaction)
-        is PaymentResult.Pending  -> TransactionStatus.Pending(result.refPayco, result.transaction)
-        is PaymentResult.Error    -> TransactionStatus.Failed(result.message)
+        val validationError = when {
+            cartItems.isEmpty() -> app.getString(R.string.checkout_empty_cart)
+            address == null -> app.getString(R.string.checkout_missing_address)
+            needsPrescription && state.selectedPrescriptionId == null -> app.getString(R.string.checkout_missing_prescription)
+            else -> null
+        }
+        if (validationError != null) {
+            _uiState.update { it.copy(errorMessage = validationError) }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCreatingOrder = true, errorMessage = null) }
+            try {
+                val order = api.createOrder(
+                    CreateOrderRequest(
+                        orderId = orderId,
+                        items = cartItems.map { OrderItemRequest(it.product.id, it.quantity) },
+                        address = address!!.fullAddress,
+                        latitude = address.latitude,
+                        longitude = address.longitude,
+                        paymentMethod = state.selectedMethod.key,
+                        prescriptionId = state.selectedPrescriptionId
+                    )
+                )
+                AppDatabase.getDatabase(app).orderDao().insertOrder(order)
+                _uiState.update { it.copy(isCreatingOrder = false) }
+                onCreated(order, state.selectedMethod)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isCreatingOrder = false, errorMessage = e.apiErrorMessage()) }
+            }
+        }
     }
 }

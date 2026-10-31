@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.Image
 import androidx.compose.ui.Alignment
@@ -41,10 +42,33 @@ import com.example.herbhopper_v1.ui.components.HerbHopperIcons
 @Composable
 fun SellerDashboardScreen(
     onNavigate: (String) -> Unit = {},
-    viewModel: com.example.herbhopper_v1.viewmodel.ProductViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    viewModel: com.example.herbhopper_v1.viewmodel.ProductViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    orderViewModel: com.example.herbhopper_v1.viewmodel.OrderViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = LocalContext.current
     val products by viewModel.allProducts.collectAsState(initial = emptyList())
+    val criticalProducts by viewModel.criticalProducts.collectAsState()
+    val stats by orderViewModel.sellerStats.collectAsState()
+    var reorderProduct by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<com.example.herbhopper_v1.data.Product?>(null) }
+
+    // Métricas reales del servidor: ventas del día (pagos aprobados) y pedidos pendientes
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        orderViewModel.loadSellerStats()
+        viewModel.refreshProductsFromBackend()
+    }
+
+    reorderProduct?.let { product ->
+        ReorderDialog(
+            product = product,
+            onDismiss = { reorderProduct = null },
+            onConfirm = { quantity ->
+                reorderProduct = null
+                viewModel.requestRestock(product, quantity) { message ->
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                }
+            }
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -87,30 +111,28 @@ fun SellerDashboardScreen(
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column {
                             Text(stringResource(id = R.string.daily_sales_summary), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
-                            Text(stringResource(id = R.string.dummy_sales_amount), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
-                        }
-                        Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = CircleShape) {
-                            Text(stringResource(id = R.string.dummy_sales_increase), modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(32.dp))
-
-                    // Chart Placeholder
-                    Row(
-                        modifier = Modifier.fillMaxWidth().height(120.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        val heights = listOf(0.4f, 0.6f, 0.55f, 0.85f, 0.95f, 0.7f, 0.45f)
-                        heights.forEach { height ->
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight(height)
-                                    .background(if (height > 0.9f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                            Text(
+                                stats?.let { com.example.herbhopper_v1.ui.patient.formatCop(it.salesToday) } ?: "—",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
+                        Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = CircleShape) {
+                            Text(
+                                stringResource(id = R.string.paid_orders_today, stats?.paidOrdersToday ?: 0),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = { orderViewModel.loadSellerStats() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(id = R.string.refresh))
                     }
                 }
             }
@@ -131,7 +153,20 @@ fun SellerDashboardScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
-                    Text(stringResource(id = R.string.dummy_new_orders), style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onPrimary)
+                    // Burbuja de alerta: se resalta cuando hay pedidos pendientes de verificación
+                    val newOrders = stats?.newOrders ?: 0
+                    Surface(
+                        color = if (newOrders > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    ) {
+                        Text(
+                            newOrders.toString(),
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (newOrders > 0) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
                     Text(stringResource(id = R.string.new_orders_today), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f))
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
@@ -150,21 +185,18 @@ fun SellerDashboardScreen(
             // Low Stock Notifications (Dynamic from database)
             Text(stringResource(id = R.string.low_stock_alerts), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(16.dp))
-            if (products.isEmpty()) {
-                StockAlertItem(name = "Blue Dream OG", details = "Flor Seca - 3.5g", units = "5 unidades", isCritical = true)
-                Spacer(modifier = Modifier.height(12.dp))
-                StockAlertItem(name = "CBD Relief Tincture", details = "Extracto - 30ml", units = "12 unidades", isCritical = false)
+            // Productos cuyo stock está en o por debajo de su umbral mínimo de seguridad
+            if (criticalProducts.isEmpty()) {
+                Text(stringResource(id = R.string.no_stock_alerts), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
-                // Show up to 3 real products from database as low stock alerts
-                products.take(3).forEachIndexed { index, product ->
-                    val units = if (index == 0) "3 unidades" else if (index == 1) "8 unidades" else "12 unidades"
-                    val isCritical = index == 0
+                criticalProducts.forEach { product ->
                     StockAlertItem(
                         name = product.name,
-                        details = product.category,
-                        units = units,
-                        isCritical = isCritical,
-                        imageUrl = product.imageUrl
+                        details = stringResource(id = R.string.min_stock_label, product.minStock),
+                        units = stringResource(id = R.string.units_count, product.stock),
+                        isCritical = true,
+                        imageUrl = product.imageUrl,
+                        onReorder = { reorderProduct = product }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
@@ -237,7 +269,7 @@ fun SellerDashboardScreen(
                                 Text(product.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                 Text(product.category, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Text("$${String.format("%,.0f", product.price)} COP", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                            Text(com.example.herbhopper_v1.ui.patient.formatCop(product.price), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -260,7 +292,14 @@ fun SellerDashboardScreen(
  * @param imageUrl URL o nombre del recurso de imagen del producto.
  */
 @Composable
-fun StockAlertItem(name: String, details: String, units: String, isCritical: Boolean, imageUrl: String? = null) {
+fun StockAlertItem(
+    name: String,
+    details: String,
+    units: String,
+    isCritical: Boolean,
+    imageUrl: String? = null,
+    onReorder: (() -> Unit)? = null
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val isWebUrl = imageUrl?.startsWith("http") == true
     val imageResId = remember(imageUrl) {
@@ -311,10 +350,54 @@ fun StockAlertItem(name: String, details: String, units: String, isCritical: Boo
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(units, fontWeight = FontWeight.Bold, color = if (isCritical) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                Text(if (isCritical) stringResource(id = R.string.critical) else stringResource(id = R.string.reorder), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = if (isCritical) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                if (isCritical) {
+                    Text(stringResource(id = R.string.critical), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                }
+                if (onReorder != null) {
+                    TextButton(onClick = onReorder, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                        Text(stringResource(id = R.string.reorder), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
+}
+
+/**
+ * Diálogo del botón "Reordenar": pide la cantidad y envía la solicitud de reabastecimiento
+ * al administrador de suministros.
+ */
+@Composable
+fun ReorderDialog(
+    product: com.example.herbhopper_v1.data.Product,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    var quantityText by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf((product.minStock * 2).coerceAtLeast(10).toString()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.reorder_title, product.name)) },
+        text = {
+            Column {
+                Text(stringResource(id = R.string.reorder_message, product.stock, product.minStock), style = MaterialTheme.typography.bodySmall)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = { quantityText = it.filter { c -> c.isDigit() }.take(5) },
+                    label = { Text(stringResource(id = R.string.reorder_quantity_label)) },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { quantityText.toIntOrNull()?.takeIf { it > 0 }?.let(onConfirm) },
+                enabled = (quantityText.toIntOrNull() ?: 0) > 0
+            ) { Text(stringResource(id = R.string.reorder)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel_btn)) } }
+    )
 }
 
 /**
